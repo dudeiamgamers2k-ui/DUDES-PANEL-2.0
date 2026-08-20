@@ -859,7 +859,7 @@
         </div>
     </div>
 
-    <!-- SETTINGS MODAL (added Client ID field) -->
+    <!-- SETTINGS MODAL (with Client ID field) -->
     <div class="modal" id="settingsModal">
         <div class="box" style="max-width:720px;">
             <div class="head"><b>⚙ Settings</b><button class="btn" id="closeSettings">✕</button></div>
@@ -2026,8 +2026,6 @@
             const clientId = document.getElementById('googleClientIdInput').value.trim();
             localStorage.setItem(DRIVE_CLIENT_ID_KEY, clientId);
             // If client ID changed, we need to reinitialize the token client
-            // We'll just reload the page to re-run the initialization (or we can re-init here)
-            // For simplicity, we'll show a message and reload.
             const theme = document.querySelector('.theme-option.active-theme')?.dataset.theme || 'dark';
             applyTheme(theme);
             const autoBackup = document.getElementById('autoBackupToggle').checked;
@@ -2038,26 +2036,30 @@
             loadSiteName();
             closeSettings();
             render();
-            // If client ID was updated, we need to reinitialize the OAuth client
-            // We'll prompt to refresh if changed.
-            const currentClientId = localStorage.getItem(DRIVE_CLIENT_ID_KEY) || '';
-            if (currentClientId) {
-                // Reinitialize token client (if gisLoaded already called, we need to re-init)
-                // For simplicity, we can just reload the page to pick up the new client ID
-                // But we can also re-init tokenClient here.
-                if (tokenClient) {
-                    // Try to reinitialize with new client ID
-                    try {
+            // Reinitialize token client if client ID exists
+            if (clientId) {
+                try {
+                    if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
                         tokenClient = google.accounts.oauth2.initTokenClient({
-                            client_id: currentClientId,
+                            client_id: clientId,
                             scope: SCOPES,
                             callback: tokenCallback,
                         });
                         gisInited = true;
-                        console.log('Token client re-initialized with new client ID');
-                    } catch (e) {
-                        console.warn('Failed to re-initialize token client', e);
+                        console.log('Token client initialized with client ID from settings.');
+                        // Update status to show ready
+                        const els = getDriveElements();
+                        if (els.text && !isConnected) {
+                            els.text.textContent = 'Client ID set. Click Connect to authenticate.';
+                        }
+                        if (els.text2 && !isConnected) {
+                            els.text2.textContent = 'Client ID set. Click Connect to authenticate.';
+                        }
+                    } else {
+                        console.warn('Google Identity Services not available yet.');
                     }
+                } catch (e) {
+                    console.warn('Failed to initialize token client:', e);
                 }
             }
         }
@@ -2414,18 +2416,32 @@
                     els.error.style.display = 'block';
                     els.error.style.color = '#fbbc04';
                 }
+                if (els.text) els.text.textContent = '⚠️ Client ID missing';
+                if (els.text2) els.text2.textContent = '⚠️ Client ID missing';
                 // Don't initialize token client
                 return;
             }
             try {
-                tokenClient = google.accounts.oauth2.initTokenClient({
-                    client_id: clientId,
-                    scope: SCOPES,
-                    callback: tokenCallback,
-                });
-                gisInited = true;
-                console.log('GIS loaded and token client initialized.');
-                showOriginInfo();
+                if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
+                    tokenClient = google.accounts.oauth2.initTokenClient({
+                        client_id: clientId,
+                        scope: SCOPES,
+                        callback: tokenCallback,
+                    });
+                    gisInited = true;
+                    console.log('GIS loaded and token client initialized.');
+                    showOriginInfo();
+                    // Update status
+                    const els = getDriveElements();
+                    if (els.text && !isConnected) {
+                        els.text.textContent = 'Client ID set. Click Connect to authenticate.';
+                    }
+                    if (els.text2 && !isConnected) {
+                        els.text2.textContent = 'Client ID set. Click Connect to authenticate.';
+                    }
+                } else {
+                    console.warn('Google Identity Services not available yet.');
+                }
             } catch (e) {
                 console.warn('GIS init error:', e);
                 setDriveError('Failed to initialize OAuth. Check your Client ID.');
@@ -2501,27 +2517,51 @@
             if (els.error) els.error.style.display = 'none';
         }
 
-        // ===== Connect / Disconnect =====
+        // ===== Connect / Disconnect (FIXED) =====
         function connectToDrive() {
             const clientId = getClientId();
             if (!clientId) {
-                setDriveError('Google Drive Client ID not set. Please set it in Settings.');
+                setDriveError('Google Drive Client ID not set. Please set it in Settings → Google Drive.');
+                // Highlight the settings field
+                const input = document.getElementById('googleClientIdInput');
+                if (input) {
+                    input.style.borderColor = '#ff6b6b';
+                    input.style.boxShadow = '0 0 20px rgba(255,0,0,0.2)';
+                    setTimeout(() => {
+                        input.style.borderColor = '';
+                        input.style.boxShadow = '';
+                    }, 3000);
+                }
+                // Open settings modal if not already open
+                const settingsModal = document.getElementById('settingsModal');
+                if (!settingsModal.classList.contains('show')) {
+                    openSettings();
+                }
                 return;
             }
+
+            // If tokenClient is not initialized, try to initialize it now
             if (!tokenClient) {
-                // Try to re-initialize with the current client ID
                 try {
-                    tokenClient = google.accounts.oauth2.initTokenClient({
-                        client_id: clientId,
-                        scope: SCOPES,
-                        callback: tokenCallback,
-                    });
-                    gisInited = true;
+                    if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
+                        tokenClient = google.accounts.oauth2.initTokenClient({
+                            client_id: clientId,
+                            scope: SCOPES,
+                            callback: tokenCallback,
+                        });
+                        gisInited = true;
+                        console.log('Token client initialized on demand.');
+                    } else {
+                        setDriveError('Google Identity Services not loaded. Please refresh the page.');
+                        return;
+                    }
                 } catch (e) {
+                    console.error('Token client init error:', e);
                     setDriveError('Failed to initialize OAuth. Check your Client ID.');
                     return;
                 }
             }
+
             const els = getDriveElements();
             if (els.dot) els.dot.className = 'dot connecting';
             if (els.dot2) els.dot2.className = 'dot connecting';
@@ -3045,16 +3085,9 @@
             }
         }
 
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                document.querySelectorAll('.modal.show').forEach(m => m.classList.remove('show'));
-            }
-        });
-
-        // After initial load, ensure the client ID is set in the settings input
-        // Also, if client ID is not set, show a message in the drive status
-        const clientId = getClientId();
-        if (!clientId) {
+        // After initial load, check if client ID is set
+        const clientIdOnLoad = getClientId();
+        if (!clientIdOnLoad) {
             const els = getDriveElements();
             if (els.error) {
                 els.error.textContent = '⚠️ Please set your Google Drive Client ID in Settings → Google Drive.';
@@ -3063,7 +3096,37 @@
             }
             if (els.text) els.text.textContent = '⚠️ Client ID missing';
             if (els.text2) els.text2.textContent = '⚠️ Client ID missing';
+        } else {
+            // If client ID exists but token client not initialized, try to init
+            if (!tokenClient) {
+                try {
+                    if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
+                        tokenClient = google.accounts.oauth2.initTokenClient({
+                            client_id: clientIdOnLoad,
+                            scope: SCOPES,
+                            callback: tokenCallback,
+                        });
+                        gisInited = true;
+                        console.log('Token client initialized on load.');
+                        const els = getDriveElements();
+                        if (els.text && !isConnected) {
+                            els.text.textContent = 'Client ID set. Click Connect to authenticate.';
+                        }
+                        if (els.text2 && !isConnected) {
+                            els.text2.textContent = 'Client ID set. Click Connect to authenticate.';
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Failed to init token client on load:', e);
+                }
+            }
         }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal.show').forEach(m => m.classList.remove('show'));
+            }
+        });
     </script>
 
     <!-- ===== Load Google APIs at the bottom ===== -->
