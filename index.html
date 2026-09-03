@@ -1588,8 +1588,10 @@
         let clients = loadClientsForUser(currentUser);
 
         function persist() {
+            // Always save locally first. This works even when the internet is OFF.
             saveClientsForUser(currentUser, clients);
-            // Trigger debounced drive backup after any data change
+            localStorage.setItem('DRIVE_PENDING_BACKUP', 'true');
+            // If online + authenticated, upload 1 second after the latest change.
             triggerDriveBackup();
         }
 
@@ -2702,10 +2704,14 @@
         let backupDebounceTimer = null;
 
         function triggerDriveBackup() {
-            if (!driveAutoSyncEnabled || !isConnected || !accessToken) return;
+            // Keep the change queued locally while offline. The online handler
+            // will upload it automatically when connectivity returns.
+            if (!driveAutoSyncEnabled || !navigator.onLine) return;
             clearTimeout(backupDebounceTimer);
             backupDebounceTimer = setTimeout(async () => {
                 backupDebounceTimer = null;
+                const ready = await ensureDriveSession();
+                if (!ready) return;
                 try {
                     await driveBackup(true);
                 } catch (e) {
@@ -3189,6 +3195,9 @@
         let gisInited = false;
         let accessToken = null;
         let isConnected = false;
+        let silentAuthInFlight = null;
+        let silentAuthResolve = null;
+        let silentAuthReject = null;
 
         function getClientId() {
             return localStorage.getItem(DRIVE_CLIENT_ID_KEY) || '';
@@ -3348,9 +3357,14 @@
                     try {
                         await gapi.client.drive.about.get({ fields: 'user' });
                     } catch (e) {
-                        localStorage.removeItem('drive_token');
+                        // Access tokens expire. Keep the account marked as connected
+                        // and silently obtain a fresh token instead of forcing logout.
                         accessToken = null;
-                        updateDriveUI(false, 'Session expired. Reconnect.');
+                        gapi.client.setToken(null);
+                        updateDriveUI(false, 'Refreshing Google Drive session...');
+                        setTimeout(() => requestSilentDriveAuth().catch(() => {
+                            updateDriveUI(false, 'Google session needs permission again.');
+                        }), 300);
                     }
                 }
                 const driveConnected = localStorage.getItem('drive_connected') === 'true';
@@ -3367,9 +3381,54 @@
             }
         }
 
+        function requestSilentDriveAuth() {
+            if (!tokenClient || !navigator.onLine) return Promise.reject(new Error('Offline'));
+            if (silentAuthInFlight) return silentAuthInFlight;
+
+            silentAuthInFlight = new Promise((resolve, reject) => {
+                silentAuthResolve = resolve;
+                silentAuthReject = reject;
+                try {
+                    // The first manual consent grants the account access. Later calls
+                    // use prompt:none so the user normally does not see the login popup.
+                    tokenClient.requestAccessToken({ prompt: 'none' });
+                } catch (e) {
+                    silentAuthInFlight = null;
+                    silentAuthResolve = null;
+                    silentAuthReject = null;
+                    reject(e);
+                }
+            });
+            return silentAuthInFlight;
+        }
+
+        async function ensureDriveSession() {
+            if (!navigator.onLine) return false;
+            if (!gapiInited || !gisInited || !tokenClient) return false;
+            if (isConnected && accessToken) {
+                try {
+                    await gapi.client.drive.about.get({ fields: 'user' });
+                    return true;
+                } catch (e) {
+                    // Token may have expired. Try silent re-auth below.
+                }
+            }
+            try {
+                await requestSilentDriveAuth();
+                return !!(isConnected && accessToken);
+            } catch (e) {
+                console.warn('Silent Drive authentication unavailable:', e);
+                return false;
+            }
+        }
+
         function tokenCallback(resp) {
             if (resp.error !== undefined) {
                 console.error('OAuth error:', resp);
+                if (silentAuthReject) silentAuthReject(new Error(resp.error));
+                silentAuthInFlight = null;
+                silentAuthResolve = null;
+                silentAuthReject = null;
                 if (resp.error === 'access_denied') {
                     setDriveError('Access denied. Please grant permission.');
                 } else if (resp.error === 'unauthorized_client') {
@@ -3385,11 +3444,19 @@
             accessToken = resp.access_token;
             gapi.client.setToken({ access_token: accessToken });
             localStorage.setItem('drive_token', accessToken);
+            localStorage.setItem('drive_connected', 'true');
             updateDriveUI(true, '✅ Connected to Google Drive');
             checkLastBackup();
             loadDriveAutoSyncState();
             loadDriveAutoRestoreState();
             setTimeout(() => checkAndAutoRestore(), 1000);
+            if (localStorage.getItem('DRIVE_PENDING_BACKUP') === 'true') {
+                setTimeout(() => triggerDriveBackup(), 1100);
+            }
+            if (silentAuthResolve) silentAuthResolve(true);
+            silentAuthInFlight = null;
+            silentAuthResolve = null;
+            silentAuthReject = null;
             const els = getDriveElements();
             if (els.error) els.error.style.display = 'none';
             showToast('Connected to Google Drive successfully!', 'success', 'Drive Connected');
@@ -3537,6 +3604,7 @@
 
                 localStorage.setItem('drive_last_backup_file', fileName);
                 localStorage.setItem('drive_last_backup_time', new Date().toISOString());
+                localStorage.removeItem('DRIVE_PENDING_BACKUP');
                 localStorage.setItem('drive_last_backup_time_ms', String(Date.now()));
                 if (els.lastBackup) {
                     els.lastBackup.textContent = '✅ Last backup: ' + new Date().toLocaleString() + ' (File: ' + fileName +
@@ -3924,6 +3992,37 @@
             document.getElementById('animStatus').textContent = this.checked ? 'ON' : 'OFF';
         });
 
+        // ============================================================
+        // OFFLINE-FIRST SYNC
+        // ============================================================
+        function handleBackOnline() {
+            console.log('Internet restored. Syncing local changes to Drive...');
+            if (driveAutoSyncEnabled) {
+                setTimeout(() => triggerDriveBackup(), 250);
+            }
+            if (driveAutoRestoreEnabled) {
+                setTimeout(() => checkAndAutoRestore(), 1200);
+            }
+        }
+
+        window.addEventListener('online', handleBackOnline);
+        window.addEventListener('offline', () => {
+            if (backupDebounceTimer) {
+                clearTimeout(backupDebounceTimer);
+                backupDebounceTimer = null;
+            }
+            console.log('Offline mode: changes continue saving locally.');
+        });
+
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && navigator.onLine) {
+                setTimeout(() => {
+                    if (localStorage.getItem('DRIVE_PENDING_BACKUP') === 'true') triggerDriveBackup();
+                    ensureDriveSession().catch(() => {});
+                }, 300);
+            }
+        });
+
         // Drive auto sync/restore toggle listeners
         document.getElementById('driveAutoSyncToggle').addEventListener('change', function() {
             if (this.checked) {
@@ -3972,6 +4071,11 @@
         loadCurrency();
         loadAnimationsState();
         loadInvoiceSettings();
+
+        // Persistent local session + offline-first storage.
+        localStorage.setItem('DUDE_APP_SESSION', 'true');
+        window.addEventListener('online', () => showToast('Internet restored — syncing to Google Drive...', 'success', 'Online'));
+        window.addEventListener('offline', () => showToast('Offline mode — changes are saved locally.', 'info', 'Offline'));
 
         // Drive Auto Sync / Restore are ON by default and remain ON across reloads.
         if (localStorage.getItem('DRIVE_AUTO_SYNC') === null) {
