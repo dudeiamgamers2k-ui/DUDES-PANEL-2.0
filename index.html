@@ -1245,7 +1245,7 @@
                 </div>
                 <p style="font-size:calc(var(--font-size-base)*0.7); color:var(--text-muted); margin-top:4px;">Enter your Client ID, save settings, then click Connect.</p>
 
-                <!-- ===== AUTO SYNC & AUTO RESTORE ===== -->
+                <!-- ===== AUTO SYNC & AUTO RESTORE (persistent) ===== -->
                 <div class="section" style="margin-top:16px;">🔄 Drive Auto Sync</div>
                 <div class="grid">
                     <div class="field">
@@ -2557,7 +2557,7 @@
         }
 
         // ============================================================
-        // DRIVE AUTO SYNC (1 second backup)
+        // DRIVE AUTO SYNC (1 second backup) — PERSISTENT
         // ============================================================
         let driveAutoSyncInterval = null;
         let driveAutoSyncEnabled = false;
@@ -2566,18 +2566,18 @@
             if (driveAutoSyncInterval) clearInterval(driveAutoSyncInterval);
             driveAutoSyncEnabled = true;
             driveAutoSyncInterval = setInterval(async () => {
-                if (!isConnected || !accessToken) {
-                    // Not connected, skip
-                    return;
-                }
+                if (!isConnected || !accessToken) return;
                 try {
-                    await driveBackup(true); // silent backup
+                    await driveBackup(true);
                 } catch (e) {
                     console.warn('Auto sync backup failed:', e);
                 }
-            }, 1000); // every 1 second
+            }, 1000);
             localStorage.setItem('DRIVE_AUTO_SYNC', 'true');
-            document.getElementById('driveAutoSyncStatus').textContent = 'On (1s)';
+            const statusEl = document.getElementById('driveAutoSyncStatus');
+            if (statusEl) statusEl.textContent = 'On (1s)';
+            const toggle = document.getElementById('driveAutoSyncToggle');
+            if (toggle) toggle.checked = true;
             showToast('Drive Auto Sync enabled (every 1 second)', 'success', 'Auto Sync');
         }
 
@@ -2588,7 +2588,10 @@
             }
             driveAutoSyncEnabled = false;
             localStorage.setItem('DRIVE_AUTO_SYNC', 'false');
-            document.getElementById('driveAutoSyncStatus').textContent = 'Off';
+            const statusEl = document.getElementById('driveAutoSyncStatus');
+            if (statusEl) statusEl.textContent = 'Off';
+            const toggle = document.getElementById('driveAutoSyncToggle');
+            if (toggle) toggle.checked = false;
             showToast('Drive Auto Sync disabled', 'info', 'Auto Sync');
         }
 
@@ -2596,6 +2599,8 @@
             const enabled = localStorage.getItem('DRIVE_AUTO_SYNC') === 'true';
             const toggle = document.getElementById('driveAutoSyncToggle');
             if (toggle) toggle.checked = enabled;
+            const statusEl = document.getElementById('driveAutoSyncStatus');
+            if (statusEl) statusEl.textContent = enabled ? 'On (1s)' : 'Off';
             if (enabled) {
                 startDriveAutoSync();
             } else {
@@ -2604,11 +2609,10 @@
         }
 
         // ============================================================
-        // DRIVE AUTO RESTORE (every 10 seconds)
+        // DRIVE AUTO RESTORE (every 10 seconds) — PERSISTENT
         // ============================================================
         let driveAutoRestoreInterval = null;
         let driveAutoRestoreEnabled = false;
-        let lastRestoreCheckTime = 0;
 
         function startDriveAutoRestore() {
             if (driveAutoRestoreInterval) clearInterval(driveAutoRestoreInterval);
@@ -2620,9 +2624,12 @@
                 } catch (e) {
                     console.warn('Auto restore check failed:', e);
                 }
-            }, 10000); // every 10 seconds
+            }, 10000);
             localStorage.setItem('DRIVE_AUTO_RESTORE', 'true');
-            document.getElementById('driveAutoRestoreStatus').textContent = 'On (10s)';
+            const statusEl = document.getElementById('driveAutoRestoreStatus');
+            if (statusEl) statusEl.textContent = 'On (10s)';
+            const toggle = document.getElementById('driveAutoRestoreToggle');
+            if (toggle) toggle.checked = true;
             showToast('Drive Auto Restore enabled (checks every 10s)', 'success', 'Auto Restore');
         }
 
@@ -2633,13 +2640,28 @@
             }
             driveAutoRestoreEnabled = false;
             localStorage.setItem('DRIVE_AUTO_RESTORE', 'false');
-            document.getElementById('driveAutoRestoreStatus').textContent = 'Off';
+            const statusEl = document.getElementById('driveAutoRestoreStatus');
+            if (statusEl) statusEl.textContent = 'Off';
+            const toggle = document.getElementById('driveAutoRestoreToggle');
+            if (toggle) toggle.checked = false;
             showToast('Drive Auto Restore disabled', 'info', 'Auto Restore');
+        }
+
+        function loadDriveAutoRestoreState() {
+            const enabled = localStorage.getItem('DRIVE_AUTO_RESTORE') === 'true';
+            const toggle = document.getElementById('driveAutoRestoreToggle');
+            if (toggle) toggle.checked = enabled;
+            const statusEl = document.getElementById('driveAutoRestoreStatus');
+            if (statusEl) statusEl.textContent = enabled ? 'On (10s)' : 'Off';
+            if (enabled) {
+                startDriveAutoRestore();
+            } else {
+                stopDriveAutoRestore();
+            }
         }
 
         async function checkAndAutoRestore() {
             if (!isConnected || !accessToken || !driveAutoRestoreEnabled) return;
-
             try {
                 const fileName = `backup-${currentUser}.json`;
                 const searchResponse = await gapi.client.drive.files.list({
@@ -2648,30 +2670,16 @@
                 });
                 const files = searchResponse.result.files || [];
                 if (files.length === 0) return;
-
                 const driveModTime = files[0].modifiedTime ? new Date(files[0].modifiedTime).getTime() : 0;
                 const lastBackupTime = parseInt(localStorage.getItem('drive_last_backup_time_ms') || '0');
-
-                // If Drive file is newer than our last known backup, restore
-                if (driveModTime > lastBackupTime + 5000) { // 5 second buffer
+                if (driveModTime > lastBackupTime + 5000) {
                     showToast('Newer backup found on Drive, auto-restoring...', 'warning', 'Auto Restore');
-                    await driveRestore(true); // silent restore
+                    await driveRestore(true);
                     localStorage.setItem('drive_last_backup_time_ms', String(driveModTime));
                     showToast('Auto restore completed successfully!', 'success', 'Auto Restore');
                 }
             } catch (e) {
                 console.warn('Auto restore check error:', e);
-            }
-        }
-
-        function loadDriveAutoRestoreState() {
-            const enabled = localStorage.getItem('DRIVE_AUTO_RESTORE') === 'true';
-            const toggle = document.getElementById('driveAutoRestoreToggle');
-            if (toggle) toggle.checked = enabled;
-            if (enabled) {
-                startDriveAutoRestore();
-            } else {
-                stopDriveAutoRestore();
             }
         }
 
@@ -2791,7 +2799,7 @@
             const animEnabled = localStorage.getItem('DUDE_I_AM_GAMER_ANIMATIONS') !== 'false';
             document.getElementById('animationsToggle').checked = animEnabled;
             document.getElementById('animStatus').textContent = animEnabled ? 'ON' : 'OFF';
-            // Load auto sync/restore states
+            // Load auto sync/restore states — these are already loaded globally, but we sync UI
             const autoSync = localStorage.getItem('DRIVE_AUTO_SYNC') === 'true';
             document.getElementById('driveAutoSyncToggle').checked = autoSync;
             document.getElementById('driveAutoSyncStatus').textContent = autoSync ? 'On (1s)' : 'Off';
@@ -3198,6 +3206,13 @@
             if (connected && accessToken) {
                 localStorage.setItem('drive_token', accessToken);
             }
+            // If drive connects, re-check auto states to ensure intervals are running
+            if (connected) {
+                setTimeout(() => {
+                    loadDriveAutoSyncState();
+                    loadDriveAutoRestoreState();
+                }, 500);
+            }
         }
 
         function setDriveError(msg) {
@@ -3398,6 +3413,9 @@
             const els = getDriveElements();
             if (els.lastBackup) els.lastBackup.textContent = '';
             showToast('Disconnected from Google Drive.', 'info', 'Drive Disconnected');
+            // Stop auto sync/restore if disconnected
+            stopDriveAutoSync();
+            stopDriveAutoRestore();
         }
 
         // ===== Backup to Drive (single file, overwrites) =====
@@ -3833,6 +3851,11 @@
                 accessToken = savedToken;
                 updateDriveUI(true, '✅ Connected to Google Drive');
                 checkLastBackup();
+                // Re-check auto states after drive connects
+                setTimeout(() => {
+                    loadDriveAutoSyncState();
+                    loadDriveAutoRestoreState();
+                }, 1000);
             }
         }
         setupDriveEvents();
@@ -3891,8 +3914,11 @@
         loadCurrency();
         loadAnimationsState();
         loadInvoiceSettings();
-        loadDriveAutoSyncState();
-        loadDriveAutoRestoreState();
+        // Load auto states AFTER everything else, so drive connection state is known
+        setTimeout(() => {
+            loadDriveAutoSyncState();
+            loadDriveAutoRestoreState();
+        }, 300);
         document.getElementById('dashboard').classList.remove('hidden');
         document.getElementById('panels').classList.add('hidden');
         document.getElementById('finance').classList.add('hidden');
@@ -3905,6 +3931,11 @@
             if (localStorage.getItem('drive_connected') === 'true') {
                 updateDriveUI(true, '✅ Connected to Google Drive');
                 checkLastBackup();
+                // Re-check auto states after drive connects
+                setTimeout(() => {
+                    loadDriveAutoSyncState();
+                    loadDriveAutoRestoreState();
+                }, 500);
             }
         }
 
