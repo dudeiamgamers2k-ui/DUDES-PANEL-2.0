@@ -2687,8 +2687,8 @@
                                 'kistis': ['kistis', 'Kistis', 'kisti', 'installments']
                             };
                             const lowerKey = key.toLowerCase();
-                            for (const [target, aliases] of Object.entries(aliases)) {
-                                if (aliases.some(a => a.toLowerCase() === lowerKey)) return target;
+                            for (const [target, aliasArr] of Object.entries(aliases)) {
+                                if (aliasArr.some(a => a.toLowerCase() === lowerKey)) return target;
                             }
                             return key;
                         };
@@ -3223,10 +3223,10 @@
                     }
                 }
 
-                // Normalize data
+                // Normalize data (fixed aliases shadowing)
                 const normalized = data.map(c => {
                     const mapField = (key) => {
-                        const aliases = {
+                        const aliasMap = {
                             'name': ['name', 'Name', 'NAME', 'User', 'USER', 'user'],
                             'date': ['date', 'Date', 'DATE', 'Date2', 'Created'],
                             'phone': ['phone', 'Phone', 'PHONE', 'Wp Num', 'WpNum', 'wp num', 'number',
@@ -3261,8 +3261,8 @@
                             'kistis': ['kistis', 'Kistis', 'kisti', 'installments']
                         };
                         const lowerKey = key.toLowerCase();
-                        for (const [target, aliases] of Object.entries(aliases)) {
-                            if (aliases.some(a => a.toLowerCase() === lowerKey)) return target;
+                        for (const [target, aliasArr] of Object.entries(aliasMap)) {
+                            if (aliasArr.some(a => a.toLowerCase() === lowerKey)) return target;
                         }
                         return key;
                     };
