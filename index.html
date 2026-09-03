@@ -328,6 +328,10 @@
         .btn.google-connect:hover { border-color:#4dabf7; box-shadow:0 0 40px rgba(26,115,232,0.3); color:#fff; }
         .btn.google-connect.connected { background:linear-gradient(135deg, #34a853, #1e7e34); border-color:#34a853; }
         .btn.google-connect.connected:hover { border-color:#66bb6a; box-shadow:0 0 40px rgba(52,168,83,0.3); }
+        .btn.green { background:rgba(0,200,80,0.2); border-color:#2ecc71; color:#2ecc71; }
+        .btn.green:hover { background:rgba(0,200,80,0.3); border-color:#27ae60; box-shadow:0 0 30px rgba(46,204,113,0.2); }
+        .btn.warning { background:rgba(255,165,0,0.2); border-color:#f39c12; color:#f39c12; }
+        .btn.warning:hover { background:rgba(255,165,0,0.3); border-color:#e67e22; box-shadow:0 0 30px rgba(243,156,18,0.2); }
 
         /* ===== STATS ===== */
         .stats {
@@ -689,6 +693,68 @@
         .inv-preview-box .inv-preview-line .inv-preview-label { color:var(--text-muted); }
         .inv-preview-box .inv-preview-line .inv-preview-value { color:var(--text-primary); font-weight:600; }
 
+        /* ===== BLUR/UNBLUR TOGGLE ===== */
+        .blur-toggle-wrap { display:flex; align-items:center; gap:10px; margin-top:4px; }
+        .blur-toggle-wrap label { font-size:calc(var(--font-size-base)*0.75); color:var(--text-muted); display:flex; align-items:center; gap:5px; cursor:pointer; touch-action:manipulation; }
+        .blur-toggle-wrap input[type="checkbox"] { width:auto; accent-color:var(--accent); }
+        .blur-input { transition:filter 0.3s ease; }
+        .blur-input.blurred { filter:blur(6px); }
+
+        /* ===== TOAST NOTIFICATIONS ===== */
+        #toast-container {
+            position:fixed;
+            bottom:20px;
+            right:20px;
+            z-index:9999;
+            display:flex;
+            flex-direction:column;
+            gap:10px;
+            max-width:380px;
+            width:100%;
+            pointer-events:none;
+        }
+        #toast-container .toast {
+            background:var(--bg-secondary);
+            border:1px solid var(--border-color);
+            border-radius:var(--border-radius);
+            padding:14px 18px;
+            box-shadow:0 8px 30px rgba(0,0,0,0.6);
+            backdrop-filter:blur(10px);
+            display:flex;
+            align-items:center;
+            gap:12px;
+            animation:toastSlide 0.4s ease forwards;
+            pointer-events:auto;
+            border-left:4px solid var(--accent);
+            transition:all 0.3s;
+        }
+        #toast-container .toast:hover { transform:scale(1.02); }
+        #toast-container .toast .toast-icon { font-size:calc(var(--font-size-base)*1.4); flex-shrink:0; }
+        #toast-container .toast .toast-content { flex:1; }
+        #toast-container .toast .toast-title { font-weight:700; font-size:calc(var(--font-size-base)*0.85); color:var(--text-primary); }
+        #toast-container .toast .toast-message { font-size:calc(var(--font-size-base)*0.78); color:var(--text-muted); margin-top:2px; }
+        #toast-container .toast .toast-close { background:none; border:none; color:var(--text-muted); font-size:calc(var(--font-size-base)*1.2); cursor:pointer; padding:0 4px; opacity:0.6; transition:opacity 0.2s; touch-action:manipulation; }
+        #toast-container .toast .toast-close:hover { opacity:1; }
+        #toast-container .toast.success { border-left-color:#2ecc71; }
+        #toast-container .toast.error { border-left-color:#e74c3c; }
+        #toast-container .toast.warning { border-left-color:#f39c12; }
+        #toast-container .toast.info { border-left-color:#3498db; }
+        @keyframes toastSlide {
+            0% { opacity:0; transform:translateX(40px) scale(0.96); }
+            100% { opacity:1; transform:translateX(0) scale(1); }
+        }
+        #toast-container .toast.removing {
+            animation:toastSlideOut 0.3s ease forwards;
+        }
+        @keyframes toastSlideOut {
+            0% { opacity:1; transform:translateX(0) scale(1); }
+            100% { opacity:0; transform:translateX(40px) scale(0.96); }
+        }
+        @media(max-width:480px) {
+            #toast-container { bottom:10px; right:10px; max-width:calc(100% - 20px); }
+            #toast-container .toast { padding:12px 14px; }
+        }
+
         /* ===== PRINT ===== */
         @media print {
             .no-print { display:none !important; }
@@ -761,6 +827,9 @@
     <canvas id="particle-bg-canvas"></canvas>
     <div class="scanlines"></div>
     <div class="glitch-overlay"></div>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
 
     <div class="app">
         <aside class="sidebar">
@@ -1140,7 +1209,7 @@
                     </div>
                 </div>
 
-                <div class="section" style="margin-top:16px;">Auto Backup</div>
+                <div class="section" style="margin-top:16px;">Auto Backup (Local)</div>
                 <div class="backup-controls">
                     <label><input type="checkbox" id="autoBackupToggle"> Enable Auto Backup (every 5 min)</label>
                     <span class="status" id="autoBackupStatus">⏻ Off</span>
@@ -1160,7 +1229,10 @@
                 <div class="section" style="margin-top:16px;">☁ Google Drive</div>
                 <div class="field">
                     <label>Google Drive Client ID</label>
-                    <input type="text" id="googleClientIdInput" placeholder="Enter your OAuth 2.0 Client ID" style="font-size:calc(var(--font-size-base)*0.85);">
+                    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                        <input type="text" id="googleClientIdInput" placeholder="Enter your OAuth 2.0 Client ID" style="font-size:calc(var(--font-size-base)*0.85); flex:1; min-width:180px;" class="blur-input">
+                        <button class="btn small" id="blurToggleBtn" style="flex-shrink:0;">👁️ Blur</button>
+                    </div>
                     <div style="margin-top:4px;font-size:calc(var(--font-size-base)*0.7);color:var(--text-muted);">Required for connecting to Google Drive. Get it from <a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="color:var(--accent);">Google Cloud Console</a>.</div>
                 </div>
                 <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:8px;">
@@ -1172,6 +1244,33 @@
                     <span id="driveStatusText">Not connected</span>
                 </div>
                 <p style="font-size:calc(var(--font-size-base)*0.7); color:var(--text-muted); margin-top:4px;">Enter your Client ID, save settings, then click Connect.</p>
+
+                <!-- ===== AUTO SYNC & AUTO RESTORE ===== -->
+                <div class="section" style="margin-top:16px;">🔄 Drive Auto Sync</div>
+                <div class="grid">
+                    <div class="field">
+                        <label>Auto Backup (every 1s)</label>
+                        <div class="toggle-wrap" style="padding:0;">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="driveAutoSyncToggle">
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <span style="font-size:calc(var(--font-size-base)*0.75);color:var(--text-muted);" id="driveAutoSyncStatus">Off</span>
+                        </div>
+                        <div style="font-size:calc(var(--font-size-base)*0.65);color:var(--text-muted);margin-top:4px;">⚠️ WARNING: 1-second backup is very frequent. Use with caution.</div>
+                    </div>
+                    <div class="field">
+                        <label>Auto Restore</label>
+                        <div class="toggle-wrap" style="padding:0;">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="driveAutoRestoreToggle">
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <span style="font-size:calc(var(--font-size-base)*0.75);color:var(--text-muted);" id="driveAutoRestoreStatus">Off</span>
+                        </div>
+                        <div style="font-size:calc(var(--font-size-base)*0.65);color:var(--text-muted);margin-top:4px;">Automatically restores from Drive every 10 seconds if a newer backup exists.</div>
+                    </div>
+                </div>
 
                 <div class="section" style="margin-top:16px;">Theme</div>
                 <div style="display:flex; gap:8px; flex-wrap:wrap;">
@@ -1230,6 +1329,56 @@
     </div>
 
     <script>
+        // ============================================================
+        // TOAST SYSTEM
+        // ============================================================
+        function showToast(message, type = 'info', title = '', duration = 4000) {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+
+            const icons = {
+                success: '✅',
+                error: '❌',
+                warning: '⚠️',
+                info: 'ℹ️'
+            };
+            const titles = {
+                success: 'Success',
+                error: 'Error',
+                warning: 'Warning',
+                info: 'Info'
+            };
+
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <span class="toast-icon">${icons[type] || 'ℹ️'}</span>
+                <div class="toast-content">
+                    <div class="toast-title">${title || titles[type] || 'Notification'}</div>
+                    <div class="toast-message">${message}</div>
+                </div>
+                <button class="toast-close" aria-label="Close">✕</button>
+            `;
+
+            toast.querySelector('.toast-close').addEventListener('click', () => {
+                toast.classList.add('removing');
+                setTimeout(() => toast.remove(), 300);
+            });
+
+            container.appendChild(toast);
+
+            if (duration > 0) {
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.classList.add('removing');
+                        setTimeout(() => toast.remove(), 300);
+                    }
+                }, duration);
+            }
+
+            return toast;
+        }
+
         // ============================================================
         // PARTICLE BACKGROUND (with animation toggle support)
         // ============================================================
@@ -1590,7 +1739,7 @@
             let a = Number($('newKistiAmount').value) || 0,
                 d = $('newKistiDate').value,
                 n = $('newKistiNote').value.trim();
-            if (!a || !d) { alert('Enter kisti amount and due date.'); return; }
+            if (!a || !d) { showToast('Enter kisti amount and due date.', 'warning', 'Missing Info'); return; }
             window.currentKistis = window.currentKistis || [];
             window.currentKistis.push({ amount: a, date: d, note: n, paid: false });
             window.currentKistis.sort((x, y) => x.date.localeCompare(y.date));
@@ -1599,6 +1748,7 @@
             $('newKistiNote').value = '';
             renderKistis(window.currentKistis);
             updateKistiPreview(window.currentKistis);
+            showToast('Kisti added successfully!', 'success', 'Added');
         }
 
         // ============================================================
@@ -1813,9 +1963,9 @@
 
         function printInvoice(id) {
             let x = clients.find(a => a.id === id);
-            if (!x) { alert('Client not found'); return; }
+            if (!x) { showToast('Client not found', 'error', 'Error'); return; }
             let win = window.open('', '_blank', 'width=800,height=900');
-            if (!win) { alert('Please allow popups for invoice printing.'); return; }
+            if (!win) { showToast('Please allow popups for invoice printing.', 'warning', 'Popup Blocked'); return; }
             const html = generateInvoiceHTML(x);
             win.document.write(`<!DOCTYPE html><html><head><title>Invoice ${esc(x.name)}</title>
             <style>
@@ -2065,7 +2215,7 @@
         function saveClient(e) {
             e.preventDefault();
             let pts = getSelectedPanels();
-            if (!pts.length) { alert('Select at least one panel type.'); return; }
+            if (!pts.length) { showToast('Select at least one panel type.', 'warning', 'Missing Panel'); return; }
             let id = $('editId').value || (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random()
                 .toString(36).slice(2));
             let x = {
@@ -2107,12 +2257,18 @@
             persist();
             closeClient();
             render();
+            showToast(`Client "${x.name}" saved successfully!`, 'success', 'Saved');
         }
 
-        function deleteClient(id) { let x = clients.find(a => a.id === id); if (x && confirm('Delete ' + x.name + '?')) { clients
-                    = clients.filter(a => a.id !== id);
+        function deleteClient(id) {
+            let x = clients.find(a => a.id === id);
+            if (x && confirm('Delete ' + x.name + '?')) {
+                clients = clients.filter(a => a.id !== id);
                 persist();
-                render() } }
+                render();
+                showToast(`Client "${x.name}" deleted.`, 'info', 'Deleted');
+            }
+        }
 
         function viewDetail(id) {
             let x = clients.find(a => a.id === id),
@@ -2288,6 +2444,7 @@
                 localStorage.setItem('DUDE_I_AM_GAMER_LOGO', dataUrl);
                 $('logoPreview').src = dataUrl;
                 $('logoPreview').style.display = 'block';
+                showToast('Logo uploaded successfully!', 'success', 'Logo Updated');
             };
             reader.readAsDataURL(file);
         }
@@ -2297,6 +2454,7 @@
             $('logoPreview').src = '';
             $('logoPreview').style.display = 'none';
             $('logoUpload').value = '';
+            showToast('Logo removed.', 'info', 'Logo Removed');
         }
 
         // ============================================================
@@ -2340,16 +2498,15 @@
                 body.classList.remove('no-animations');
                 localStorage.setItem('DUDE_I_AM_GAMER_ANIMATIONS', 'true');
                 if (status) status.textContent = 'ON';
-                // Start particles and matrix
                 if (typeof window._particleStart === 'function') {
                     window._particleStart();
                 }
                 if (typeof window._matrixStart === 'function') {
                     window._matrixStart();
                 }
-                // Re-apply theme to restore scanlines/glitch
                 const theme = localStorage.getItem('DUDE_I_AM_GAMER_THEME') || 'dark';
                 applyTheme(theme);
+                showToast('Animations enabled', 'success', 'Animations');
             } else {
                 body.classList.add('no-animations');
                 localStorage.setItem('DUDE_I_AM_GAMER_ANIMATIONS', 'false');
@@ -2360,11 +2517,11 @@
                 if (typeof window._matrixStop === 'function') {
                     window._matrixStop();
                 }
-                // Hide scanlines/glitch
                 const scanlines = document.querySelector('.scanlines');
                 const glitch = document.querySelector('.glitch-overlay');
                 if (scanlines) scanlines.style.display = 'none';
                 if (glitch) glitch.style.display = 'none';
+                showToast('Animations disabled', 'info', 'Animations');
             }
 
             if (toggle && toggle.checked !== enabled) {
@@ -2377,6 +2534,145 @@
             const toggle = document.getElementById('animationsToggle');
             if (toggle) toggle.checked = enabled;
             toggleAnimations(enabled);
+        }
+
+        // ============================================================
+        // BLUR/UNBLUR TOGGLE for Google Client ID
+        // ============================================================
+        function toggleBlur() {
+            const input = document.getElementById('googleClientIdInput');
+            const btn = document.getElementById('blurToggleBtn');
+            if (!input || !btn) return;
+            const isBlurred = input.classList.contains('blurred');
+            if (isBlurred) {
+                input.classList.remove('blurred');
+                btn.textContent = '👁️ Blur';
+                btn.classList.remove('primary');
+                btn.classList.add('small');
+            } else {
+                input.classList.add('blurred');
+                btn.textContent = '👁️ Unblur';
+                btn.classList.add('primary');
+            }
+        }
+
+        // ============================================================
+        // DRIVE AUTO SYNC (1 second backup)
+        // ============================================================
+        let driveAutoSyncInterval = null;
+        let driveAutoSyncEnabled = false;
+
+        function startDriveAutoSync() {
+            if (driveAutoSyncInterval) clearInterval(driveAutoSyncInterval);
+            driveAutoSyncEnabled = true;
+            driveAutoSyncInterval = setInterval(async () => {
+                if (!isConnected || !accessToken) {
+                    // Not connected, skip
+                    return;
+                }
+                try {
+                    await driveBackup(true); // silent backup
+                } catch (e) {
+                    console.warn('Auto sync backup failed:', e);
+                }
+            }, 1000); // every 1 second
+            localStorage.setItem('DRIVE_AUTO_SYNC', 'true');
+            document.getElementById('driveAutoSyncStatus').textContent = 'On (1s)';
+            showToast('Drive Auto Sync enabled (every 1 second)', 'success', 'Auto Sync');
+        }
+
+        function stopDriveAutoSync() {
+            if (driveAutoSyncInterval) {
+                clearInterval(driveAutoSyncInterval);
+                driveAutoSyncInterval = null;
+            }
+            driveAutoSyncEnabled = false;
+            localStorage.setItem('DRIVE_AUTO_SYNC', 'false');
+            document.getElementById('driveAutoSyncStatus').textContent = 'Off';
+            showToast('Drive Auto Sync disabled', 'info', 'Auto Sync');
+        }
+
+        function loadDriveAutoSyncState() {
+            const enabled = localStorage.getItem('DRIVE_AUTO_SYNC') === 'true';
+            const toggle = document.getElementById('driveAutoSyncToggle');
+            if (toggle) toggle.checked = enabled;
+            if (enabled) {
+                startDriveAutoSync();
+            } else {
+                stopDriveAutoSync();
+            }
+        }
+
+        // ============================================================
+        // DRIVE AUTO RESTORE (every 10 seconds)
+        // ============================================================
+        let driveAutoRestoreInterval = null;
+        let driveAutoRestoreEnabled = false;
+        let lastRestoreCheckTime = 0;
+
+        function startDriveAutoRestore() {
+            if (driveAutoRestoreInterval) clearInterval(driveAutoRestoreInterval);
+            driveAutoRestoreEnabled = true;
+            driveAutoRestoreInterval = setInterval(async () => {
+                if (!isConnected || !accessToken) return;
+                try {
+                    await checkAndAutoRestore();
+                } catch (e) {
+                    console.warn('Auto restore check failed:', e);
+                }
+            }, 10000); // every 10 seconds
+            localStorage.setItem('DRIVE_AUTO_RESTORE', 'true');
+            document.getElementById('driveAutoRestoreStatus').textContent = 'On (10s)';
+            showToast('Drive Auto Restore enabled (checks every 10s)', 'success', 'Auto Restore');
+        }
+
+        function stopDriveAutoRestore() {
+            if (driveAutoRestoreInterval) {
+                clearInterval(driveAutoRestoreInterval);
+                driveAutoRestoreInterval = null;
+            }
+            driveAutoRestoreEnabled = false;
+            localStorage.setItem('DRIVE_AUTO_RESTORE', 'false');
+            document.getElementById('driveAutoRestoreStatus').textContent = 'Off';
+            showToast('Drive Auto Restore disabled', 'info', 'Auto Restore');
+        }
+
+        async function checkAndAutoRestore() {
+            if (!isConnected || !accessToken || !driveAutoRestoreEnabled) return;
+
+            try {
+                const fileName = `backup-${currentUser}.json`;
+                const searchResponse = await gapi.client.drive.files.list({
+                    q: `name = '${fileName}' and trashed = false`,
+                    fields: 'files(id, name, modifiedTime)',
+                });
+                const files = searchResponse.result.files || [];
+                if (files.length === 0) return;
+
+                const driveModTime = files[0].modifiedTime ? new Date(files[0].modifiedTime).getTime() : 0;
+                const lastBackupTime = parseInt(localStorage.getItem('drive_last_backup_time_ms') || '0');
+
+                // If Drive file is newer than our last known backup, restore
+                if (driveModTime > lastBackupTime + 5000) { // 5 second buffer
+                    showToast('Newer backup found on Drive, auto-restoring...', 'warning', 'Auto Restore');
+                    await driveRestore(true); // silent restore
+                    localStorage.setItem('drive_last_backup_time_ms', String(driveModTime));
+                    showToast('Auto restore completed successfully!', 'success', 'Auto Restore');
+                }
+            } catch (e) {
+                console.warn('Auto restore check error:', e);
+            }
+        }
+
+        function loadDriveAutoRestoreState() {
+            const enabled = localStorage.getItem('DRIVE_AUTO_RESTORE') === 'true';
+            const toggle = document.getElementById('driveAutoRestoreToggle');
+            if (toggle) toggle.checked = enabled;
+            if (enabled) {
+                startDriveAutoRestore();
+            } else {
+                stopDriveAutoRestore();
+            }
         }
 
         // ============================================================
@@ -2474,6 +2770,17 @@
             // Load client ID
             const clientId = localStorage.getItem(DRIVE_CLIENT_ID_KEY) || '';
             document.getElementById('googleClientIdInput').value = clientId;
+            // Check if blur should be applied
+            const isBlurred = localStorage.getItem('DUDE_CLIENT_ID_BLURRED') === 'true';
+            const input = document.getElementById('googleClientIdInput');
+            const btn = document.getElementById('blurToggleBtn');
+            if (isBlurred && input) {
+                input.classList.add('blurred');
+                if (btn) btn.textContent = '👁️ Unblur';
+            } else if (input) {
+                input.classList.remove('blurred');
+                if (btn) btn.textContent = '👁️ Blur';
+            }
             // Update drive UI
             const connected = localStorage.getItem('drive_connected') === 'true' && !!accessToken;
             updateDriveUI(connected, connected ? '✅ Connected to Google Drive' : 'Not connected');
@@ -2484,6 +2791,13 @@
             const animEnabled = localStorage.getItem('DUDE_I_AM_GAMER_ANIMATIONS') !== 'false';
             document.getElementById('animationsToggle').checked = animEnabled;
             document.getElementById('animStatus').textContent = animEnabled ? 'ON' : 'OFF';
+            // Load auto sync/restore states
+            const autoSync = localStorage.getItem('DRIVE_AUTO_SYNC') === 'true';
+            document.getElementById('driveAutoSyncToggle').checked = autoSync;
+            document.getElementById('driveAutoSyncStatus').textContent = autoSync ? 'On (1s)' : 'Off';
+            const autoRestore = localStorage.getItem('DRIVE_AUTO_RESTORE') === 'true';
+            document.getElementById('driveAutoRestoreToggle').checked = autoRestore;
+            document.getElementById('driveAutoRestoreStatus').textContent = autoRestore ? 'On (10s)' : 'Off';
             $('settingsModal').classList.add('show');
         }
 
@@ -2501,6 +2815,10 @@
             // Save client ID
             const clientId = document.getElementById('googleClientIdInput').value.trim();
             localStorage.setItem(DRIVE_CLIENT_ID_KEY, clientId);
+            // Save blur state
+            const input = document.getElementById('googleClientIdInput');
+            const isBlurred = input.classList.contains('blurred');
+            localStorage.setItem('DUDE_CLIENT_ID_BLURRED', String(isBlurred));
             // If client ID changed, we need to reinitialize the token client
             const theme = document.querySelector('.theme-option.active-theme')?.dataset.theme || 'dark';
             applyTheme(theme);
@@ -2514,6 +2832,13 @@
             toggleAnimations(animEnabled);
             // Save invoice settings
             saveInvoiceSettings();
+            // Save auto sync/restore states
+            const autoSync = document.getElementById('driveAutoSyncToggle').checked;
+            if (autoSync) startDriveAutoSync();
+            else stopDriveAutoSync();
+            const autoRestore = document.getElementById('driveAutoRestoreToggle').checked;
+            if (autoRestore) startDriveAutoRestore();
+            else stopDriveAutoRestore();
             loadSiteName();
             closeSettings();
             render();
@@ -2542,10 +2867,11 @@
                     console.warn('Failed to initialize token client:', e);
                 }
             }
+            showToast('Settings saved successfully!', 'success', 'Settings');
         }
 
         // ============================================================
-        // AUTO BACKUP
+        // AUTO BACKUP (Local)
         // ============================================================
         let autoBackupInterval = null;
 
@@ -2595,6 +2921,7 @@
             a.download = `backup-${currentUser}-${today()}.json`;
             a.click();
             URL.revokeObjectURL(a.href);
+            showToast('Local backup exported successfully!', 'success', 'Backup');
         }
 
         // ============================================================
@@ -2610,6 +2937,7 @@
             a.download = `full-data-${currentUser}-${today()}.json`;
             a.click();
             URL.revokeObjectURL(a.href);
+            showToast('All data exported successfully!', 'success', 'Export');
         }
 
         function importData(file) {
@@ -2636,7 +2964,7 @@
                     }
 
                     if (!imported || !Array.isArray(imported) || imported.length === 0) {
-                        alert('No client data found in the file.');
+                        showToast('No client data found in the file.', 'warning', 'Import Failed');
                         return;
                     }
 
@@ -2728,7 +3056,7 @@
 
                     const valid = normalized.filter(c => c.name && c.name.trim().length > 0);
                     if (valid.length === 0) {
-                        alert('No valid client records found (all missing names).');
+                        showToast('No valid client records found (all missing names).', 'warning', 'Import Failed');
                         return;
                     }
 
@@ -2741,10 +3069,10 @@
                     clients = valid;
                     persist();
                     render();
-                    alert(`✅ Successfully imported ${clients.length} clients.`);
+                    showToast(`✅ Successfully imported ${clients.length} clients.`, 'success', 'Import');
 
                 } catch (err) {
-                    alert('❌ Error parsing JSON: ' + err.message);
+                    showToast('Error parsing JSON: ' + err.message, 'error', 'Import Failed');
                     console.error('Import error:', err);
                 }
             };
@@ -2776,22 +3104,24 @@
             document.getElementById('userSelect').value = currentUser;
             render();
             loadSiteName();
+            showToast(`Switched to user: ${newUser}`, 'info', 'User Switch');
         }
 
         function addUser() {
             const name = prompt('Enter new user name (e.g., reseller2):');
             if (!name || name.trim() === '') return;
             const username = name.trim().toLowerCase();
-            if (users.includes(username)) { alert('User already exists!'); return; }
+            if (users.includes(username)) { showToast('User already exists!', 'warning', 'Error'); return; }
             users.push(username);
             localStorage.setItem(USERS_LIST_KEY, JSON.stringify(users));
             saveClientsForUser(username, []);
             loadUsers();
             switchUser(username);
+            showToast(`User "${username}" created.`, 'success', 'User Added');
         }
 
         function deleteUser() {
-            if (users.length <= 1) { alert('Cannot delete the last user.'); return; }
+            if (users.length <= 1) { showToast('Cannot delete the last user.', 'warning', 'Error'); return; }
             const userToDelete = currentUser;
             if (!confirm(`Delete user "${userToDelete}" and all their data?`)) return;
             users = users.filter(u => u !== userToDelete);
@@ -2801,6 +3131,7 @@
             switchUser(newUser);
             loadUsers();
             render();
+            showToast(`User "${userToDelete}" deleted.`, 'info', 'User Deleted');
         }
 
         // ============================================================
@@ -2877,6 +3208,7 @@
                 els.error.innerHTML += ' <br><small><a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="color:#4dabf7;">Open Google Cloud Console → Credentials</a></small>';
                 setTimeout(() => { if (els.error) els.error.style.display = 'none'; }, 15000);
             }
+            showToast(msg, 'error', 'Drive Error');
         }
 
         // ===== GAPI & GIS functions =====
@@ -2992,6 +3324,7 @@
             checkLastBackup();
             const els = getDriveElements();
             if (els.error) els.error.style.display = 'none';
+            showToast('Connected to Google Drive successfully!', 'success', 'Drive Connected');
         }
 
         // ===== Connect / Disconnect =====
@@ -3064,17 +3397,18 @@
             updateDriveUI(false, 'Disconnected');
             const els = getDriveElements();
             if (els.lastBackup) els.lastBackup.textContent = '';
+            showToast('Disconnected from Google Drive.', 'info', 'Drive Disconnected');
         }
 
         // ===== Backup to Drive (single file, overwrites) =====
-        async function driveBackup() {
+        async function driveBackup(silent = false) {
             if (!isConnected || !accessToken) {
-                setDriveError('Not connected to Google Drive. Please connect first.');
+                if (!silent) setDriveError('Not connected to Google Drive. Please connect first.');
                 return;
             }
             const els = getDriveElements();
             try {
-                if (els.backupBtn) {
+                if (els.backupBtn && !silent) {
                     els.backupBtn.disabled = true;
                     els.backupBtn.textContent = '⏳ Uploading...';
                 }
@@ -3131,37 +3465,43 @@
 
                 localStorage.setItem('drive_last_backup_file', fileName);
                 localStorage.setItem('drive_last_backup_time', new Date().toISOString());
+                localStorage.setItem('drive_last_backup_time_ms', String(Date.now()));
                 if (els.lastBackup) {
                     els.lastBackup.textContent = '✅ Last backup: ' + new Date().toLocaleString() + ' (File: ' + fileName +
                         ')';
                 }
-                if (els.text) els.text.textContent = '✅ Connected - Last backup: ' + fileName;
-                if (els.text2) els.text2.textContent = '✅ Connected - Last backup: ' + fileName;
+                if (els.text && !silent) els.text.textContent = '✅ Connected - Last backup: ' + fileName;
+                if (els.text2 && !silent) els.text2.textContent = '✅ Connected - Last backup: ' + fileName;
 
-                if (els.backupBtn) {
+                if (els.backupBtn && !silent) {
                     els.backupBtn.textContent = '⬆ Backup to Drive';
                     els.backupBtn.disabled = false;
+                }
+                if (!silent) {
+                    showToast('Backup to Drive completed successfully!', 'success', 'Drive Backup');
                 }
 
             } catch (e) {
                 console.error('Backup error:', e);
-                setDriveError('Backup failed: ' + e.message);
-                if (els.backupBtn) {
-                    els.backupBtn.textContent = '⬆ Backup to Drive';
-                    els.backupBtn.disabled = false;
+                if (!silent) {
+                    setDriveError('Backup failed: ' + e.message);
+                    if (els.backupBtn) {
+                        els.backupBtn.textContent = '⬆ Backup to Drive';
+                        els.backupBtn.disabled = false;
+                    }
                 }
             }
         }
 
         // ===== Restore from Drive (single file) =====
-        async function driveRestore() {
+        async function driveRestore(silent = false) {
             if (!isConnected || !accessToken) {
-                setDriveError('Not connected to Google Drive. Please connect first.');
+                if (!silent) setDriveError('Not connected to Google Drive. Please connect first.');
                 return;
             }
             const els = getDriveElements();
             try {
-                if (els.restoreBtn) {
+                if (els.restoreBtn && !silent) {
                     els.restoreBtn.disabled = true;
                     els.restoreBtn.textContent = '⏳ Fetching...';
                 }
@@ -3174,10 +3514,12 @@
                 const files = searchResponse.result.files || [];
 
                 if (files.length === 0) {
-                    setDriveError('No backup file found for this user: ' + fileName);
-                    if (els.restoreBtn) {
-                        els.restoreBtn.textContent = '⬇ Restore from Drive';
-                        els.restoreBtn.disabled = false;
+                    if (!silent) {
+                        setDriveError('No backup file found for this user: ' + fileName);
+                        if (els.restoreBtn) {
+                            els.restoreBtn.textContent = '⬇ Restore from Drive';
+                            els.restoreBtn.disabled = false;
+                        }
                     }
                     return;
                 }
@@ -3186,15 +3528,17 @@
                 const fileId = file.id;
                 const modTime = file.modifiedTime ? new Date(file.modifiedTime).toLocaleString() : 'unknown';
 
-                if (!confirm(`Restore from "${fileName}" (modified: ${modTime})?\n\nThis will REPLACE all ${clients.length} existing clients.`)) {
-                    if (els.restoreBtn) {
-                        els.restoreBtn.textContent = '⬇ Restore from Drive';
-                        els.restoreBtn.disabled = false;
+                if (!silent) {
+                    if (!confirm(`Restore from "${fileName}" (modified: ${modTime})?\n\nThis will REPLACE all ${clients.length} existing clients.`)) {
+                        if (els.restoreBtn) {
+                            els.restoreBtn.textContent = '⬇ Restore from Drive';
+                            els.restoreBtn.disabled = false;
+                        }
+                        return;
                     }
-                    return;
                 }
 
-                if (els.restoreBtn) els.restoreBtn.textContent = '⏳ Downloading...';
+                if (els.restoreBtn && !silent) els.restoreBtn.textContent = '⏳ Downloading...';
 
                 const downloadResponse = await fetch(
                     `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
@@ -3214,12 +3558,14 @@
                 }
 
                 if (data.length === 0) {
-                    if (!confirm('The backup file contains 0 clients. Continue?')) {
-                        if (els.restoreBtn) {
-                            els.restoreBtn.textContent = '⬇ Restore from Drive';
-                            els.restoreBtn.disabled = false;
+                    if (!silent) {
+                        if (!confirm('The backup file contains 0 clients. Continue?')) {
+                            if (els.restoreBtn) {
+                                els.restoreBtn.textContent = '⬇ Restore from Drive';
+                                els.restoreBtn.disabled = false;
+                            }
+                            return;
                         }
-                        return;
                     }
                 }
 
@@ -3302,8 +3648,8 @@
 
                 const valid = normalized.filter(c => c.name && c.name.trim().length > 0);
                 if (valid.length === 0) {
-                    setDriveError('No valid client records found in the backup.');
-                    if (els.restoreBtn) {
+                    if (!silent) setDriveError('No valid client records found in the backup.');
+                    if (els.restoreBtn && !silent) {
                         els.restoreBtn.textContent = '⬇ Restore from Drive';
                         els.restoreBtn.disabled = false;
                     }
@@ -3313,19 +3659,24 @@
                 clients = valid;
                 persist();
                 render();
-                alert(`✅ Successfully restored ${clients.length} clients from "${fileName}".`);
+                if (!silent) {
+                    showToast(`✅ Successfully restored ${clients.length} clients from "${fileName}".`, 'success',
+                        'Restore Complete');
+                }
 
-                if (els.restoreBtn) {
+                if (els.restoreBtn && !silent) {
                     els.restoreBtn.textContent = '⬇ Restore from Drive';
                     els.restoreBtn.disabled = false;
                 }
 
             } catch (e) {
                 console.error('Restore error:', e);
-                setDriveError('Restore failed: ' + e.message);
-                if (els.restoreBtn) {
-                    els.restoreBtn.textContent = '⬇ Restore from Drive';
-                    els.restoreBtn.disabled = false;
+                if (!silent) {
+                    setDriveError('Restore failed: ' + e.message);
+                    if (els.restoreBtn) {
+                        els.restoreBtn.textContent = '⬇ Restore from Drive';
+                        els.restoreBtn.disabled = false;
+                    }
                 }
             }
         }
@@ -3366,6 +3717,9 @@
         document.getElementById('cancelSettings').onclick = closeSettings;
         document.getElementById('saveSettings').onclick = saveSettings;
         document.getElementById('currencySelect').addEventListener('change', saveCurrency);
+
+        // Blur toggle
+        document.getElementById('blurToggleBtn').addEventListener('click', toggleBlur);
 
         document.getElementById('userSelect').addEventListener('change', function() { switchUser(this.value); });
         document.getElementById('addUserBtn').addEventListener('click', addUser);
@@ -3463,8 +3817,8 @@
 
             const backupBtn = document.getElementById('driveBackupBtn');
             const restoreBtn = document.getElementById('driveRestoreBtn');
-            if (backupBtn) backupBtn.addEventListener('click', driveBackup);
-            if (restoreBtn) restoreBtn.addEventListener('click', driveRestore);
+            if (backupBtn) backupBtn.addEventListener('click', () => driveBackup(false));
+            if (restoreBtn) restoreBtn.addEventListener('click', () => driveRestore(false));
 
             const closeDrive1 = document.getElementById('closeGoogleDrive');
             const closeDrive2 = document.getElementById('closeGoogleDrive2');
@@ -3489,6 +3843,22 @@
             document.getElementById('animStatus').textContent = this.checked ? 'ON' : 'OFF';
         });
 
+        // Drive auto sync/restore toggle listeners
+        document.getElementById('driveAutoSyncToggle').addEventListener('change', function() {
+            if (this.checked) {
+                startDriveAutoSync();
+            } else {
+                stopDriveAutoSync();
+            }
+        });
+        document.getElementById('driveAutoRestoreToggle').addEventListener('change', function() {
+            if (this.checked) {
+                startDriveAutoRestore();
+            } else {
+                stopDriveAutoRestore();
+            }
+        });
+
         // Invoice preview live update
         ['invTitle', 'invPrefix', 'invHeader', 'invFooter', 'invShowQR', 'invShowSeal', 'invShowCompany',
             'invShowPayment'
@@ -3507,6 +3877,8 @@
         window.addEventListener('beforeunload', function() {
             if (renderInterval) clearInterval(renderInterval);
             stopAutoBackup();
+            stopDriveAutoSync();
+            stopDriveAutoRestore();
             persist();
         });
 
@@ -3519,6 +3891,8 @@
         loadCurrency();
         loadAnimationsState();
         loadInvoiceSettings();
+        loadDriveAutoSyncState();
+        loadDriveAutoRestoreState();
         document.getElementById('dashboard').classList.remove('hidden');
         document.getElementById('panels').classList.add('hidden');
         document.getElementById('finance').classList.add('hidden');
@@ -3574,6 +3948,11 @@
                 document.querySelectorAll('.modal.show').forEach(m => m.classList.remove('show'));
             }
         });
+
+        // Show a welcome toast
+        setTimeout(() => {
+            showToast('Welcome to DUDE I AM GAMER Business Memo!', 'info', '👋 Welcome', 3000);
+        }, 500);
     </script>
 
     <script src="https://accounts.google.com/gsi/client" onload="window.gisLoaded()" async defer></script>
