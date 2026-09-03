@@ -268,7 +268,7 @@
         .logo .gamer { color:var(--accent); }
         .sub { color:var(--text-secondary); font-size:10px; margin-top:5px; letter-spacing:2px; text-transform:uppercase; border-left:2px solid var(--accent); padding-left:8px; }
         .nav { margin-top:28px; display:grid; gap:6px; }
-        .nav button { border:1px solid transparent; background:transparent; color:var(--text-muted); padding:12px 14px; border-radius:var(--border-radius); text-align:left; font-family:var(--font-family); font-size:calc(var(--font-size-base)*0.92); letter-spacing:0.5px; transition:all 0.25s ease; position:relative; overflow:hidden; cursor:pointer; }
+        .nav button { border:1px solid transparent; background:transparent; color:var(--text-muted); padding:12px 14px; border-radius:var(--border-radius); text-align:left; font-family:var(--font-family); font-size:calc(var(--font-size-base)*0.92); letter-spacing:0.5px; transition:all 0.25s ease; position:relative; overflow:hidden; cursor:pointer; touch-action:manipulation; }
         .nav button::before { content:''; position:absolute; inset:0; background:linear-gradient(135deg, var(--accent-glow), transparent); opacity:0; transition:opacity 0.3s; }
         .nav button:hover::before, .nav button.active::before { opacity:1; }
         .nav button:hover { color:var(--text-primary); border-color:var(--border-color); box-shadow:0 0 25px var(--shadow-color), inset 0 0 25px var(--shadow-color); transform:translateX(4px); }
@@ -278,7 +278,7 @@
         .sidefoot { position:absolute; bottom:18px; color:var(--text-muted); font-size:10px; line-height:1.6; letter-spacing:0.5px; border-top:1px solid var(--border-color); padding-top:12px; width:calc(100% - 30px); opacity:0.7; }
 
         .user-switcher { margin-top:16px; border-top:1px solid var(--border-color); padding-top:12px; }
-        .user-switcher select { width:100%; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:var(--border-radius); padding:8px 10px; font-family:var(--font-family); font-size:calc(var(--font-size-base)*0.85); outline:none; cursor:pointer; }
+        .user-switcher select { width:100%; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:var(--border-radius); padding:8px 10px; font-family:var(--font-family); font-size:calc(var(--font-size-base)*0.85); outline:none; cursor:pointer; touch-action:manipulation; }
         .user-switcher select:focus { border-color:var(--accent); box-shadow:0 0 25px var(--shadow-color); }
         .user-switcher .user-actions { display:flex; gap:6px; margin-top:6px; }
         .user-switcher .user-actions .btn { flex:1; padding:4px 8px; font-size:calc(var(--font-size-base)*0.7); justify-content:center; }
@@ -314,7 +314,7 @@
         .top p { margin:5px 0 0; color:var(--text-muted); font-size:calc(var(--font-size-base)*0.85); letter-spacing:0.5px; }
 
         /* ===== BUTTONS ===== */
-        .btn { border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-secondary); padding:9px 16px; border-radius:var(--border-radius); font-family:var(--font-family); font-size:calc(var(--font-size-base)*0.85); letter-spacing:0.5px; cursor:pointer; transition:all 0.2s ease; position:relative; overflow:hidden; display:inline-flex; align-items:center; gap:6px; text-transform:uppercase; }
+        .btn { border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-secondary); padding:9px 16px; border-radius:var(--border-radius); font-family:var(--font-family); font-size:calc(var(--font-size-base)*0.85); letter-spacing:0.5px; cursor:pointer; transition:all 0.2s ease; position:relative; overflow:hidden; display:inline-flex; align-items:center; gap:6px; text-transform:uppercase; touch-action:manipulation; pointer-events:auto; }
         .btn::before { content:''; position:absolute; inset:-2px; background:linear-gradient(135deg, var(--accent-glow), transparent, var(--accent-glow)); opacity:0; transition:opacity 0.3s; border-radius:var(--border-radius); }
         .btn:hover::before { opacity:1; }
         .btn:hover { border-color:var(--accent); box-shadow:0 0 30px var(--shadow-color), inset 0 0 30px var(--shadow-color); transform:scale(1.02) translateY(-1px); color:var(--text-primary); }
@@ -445,6 +445,7 @@
             align-items: center;
             cursor: pointer;
             user-select: none;
+            touch-action: manipulation;
         }
         .more-section .more-header h3 {
             font-size: calc(var(--font-size-base) * 1.1);
@@ -557,14 +558,14 @@
 
         /* ===== DROPDOWN MULTI-SELECT ===== */
         .multi-select-wrap { position:relative; width:100%; cursor:pointer; }
-        .multi-select-wrap .selected-display { display:flex; flex-wrap:wrap; gap:4px; padding:8px 10px; background:var(--bg-input); border:1px solid var(--border-color); border-radius:var(--border-radius); min-height:40px; align-items:center; transition:border-color 0.3s, box-shadow 0.3s; color:var(--text-primary); font-size:calc(var(--font-size-base)*0.82); }
+        .multi-select-wrap .selected-display { display:flex; flex-wrap:wrap; gap:4px; padding:8px 10px; background:var(--bg-input); border:1px solid var(--border-color); border-radius:var(--border-radius); min-height:40px; align-items:center; transition:border-color 0.3s, box-shadow 0.3s; color:var(--text-primary); font-size:calc(var(--font-size-base)*0.82); touch-action:manipulation; }
         .multi-select-wrap .selected-display .placeholder { color:var(--text-muted); opacity:0.6; }
         .multi-select-wrap .selected-display .chip { display:inline-flex; align-items:center; gap:4px; background:var(--accent-glow); border:1px solid var(--accent); border-radius:var(--border-radius); padding:2px 8px; font-size:calc(var(--font-size-base)*0.7); color:var(--text-primary); }
-        .multi-select-wrap .selected-display .chip .remove { cursor:pointer; opacity:0.6; font-weight:bold; margin-left:2px; }
+        .multi-select-wrap .selected-display .chip .remove { cursor:pointer; opacity:0.6; font-weight:bold; margin-left:2px; touch-action:manipulation; }
         .multi-select-wrap .selected-display .chip .remove:hover { opacity:1; color:#ff6b6b; }
         .multi-select-wrap .dropdown-panel { display:none; position:absolute; top:calc(100%+4px); left:0; right:0; background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:var(--border-radius); padding:6px; max-height:200px; overflow-y:auto; z-index:50; box-shadow:0 8px 30px rgba(0,0,0,0.4); }
         .multi-select-wrap .dropdown-panel.open { display:block; }
-        .multi-select-wrap .dropdown-panel label { display:flex; align-items:center; gap:8px; padding:6px 10px; border-radius:var(--border-radius); cursor:pointer; font-size:calc(var(--font-size-base)*0.82); color:var(--text-primary); transition:background 0.2s; }
+        .multi-select-wrap .dropdown-panel label { display:flex; align-items:center; gap:8px; padding:6px 10px; border-radius:var(--border-radius); cursor:pointer; font-size:calc(var(--font-size-base)*0.82); color:var(--text-primary); transition:background 0.2s; touch-action:manipulation; }
         .multi-select-wrap .dropdown-panel label:hover { background:var(--accent-glow); }
         .multi-select-wrap .dropdown-panel label input[type="checkbox"] { width:auto; accent-color:var(--accent); }
         .multi-select-wrap .dropdown-panel .hint { padding:6px 10px; font-size:calc(var(--font-size-base)*0.7); color:var(--text-muted); border-top:1px solid var(--border-color); margin-top:4px; padding-top:8px; }
@@ -634,7 +635,7 @@
 
         /* ===== THEME SELECTOR ===== */
         .theme-selector { margin-top:20px; display:flex; gap:4px; flex-wrap:wrap; border-top:1px solid var(--border-color); padding-top:14px; }
-        .theme-selector button { flex:1; min-width:44px; border:1px solid var(--border-color); background:var(--bg-card); color:var(--text-secondary); padding:5px 8px; border-radius:var(--border-radius); font-size:calc(var(--font-size-base)*0.55); cursor:pointer; transition:all 0.2s; font-family:var(--font-family); text-transform:uppercase; letter-spacing:0.3px; }
+        .theme-selector button { flex:1; min-width:44px; border:1px solid var(--border-color); background:var(--bg-card); color:var(--text-secondary); padding:5px 8px; border-radius:var(--border-radius); font-size:calc(var(--font-size-base)*0.55); cursor:pointer; transition:all 0.2s; font-family:var(--font-family); text-transform:uppercase; letter-spacing:0.3px; touch-action:manipulation; }
         .theme-selector button:hover { border-color:var(--accent); background:var(--accent-glow); color:var(--text-primary); }
         .theme-selector button.active-theme { border-color:var(--accent); background:var(--accent-glow); color:var(--text-primary); box-shadow:0 0 20px var(--shadow-color); }
 
@@ -650,14 +651,14 @@
 
         /* ===== CURRENCY ===== */
         .currency-select-wrap { position:relative; width:100%; }
-        .currency-select-wrap select { width:100%; padding:10px 12px; appearance:none; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:var(--border-radius); font-family:var(--font-family); font-size:calc(var(--font-size-base)*0.85); cursor:pointer; transition:all 0.3s; }
+        .currency-select-wrap select { width:100%; padding:10px 12px; appearance:none; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:var(--border-radius); font-family:var(--font-family); font-size:calc(var(--font-size-base)*0.85); cursor:pointer; transition:all 0.3s; touch-action:manipulation; }
         .currency-select-wrap select:focus { border-color:var(--accent); box-shadow:0 0 25px var(--shadow-color); }
         .currency-select-wrap select option { background:var(--bg-secondary); color:var(--text-primary); padding:8px; }
         .currency-select-wrap .currency-arrow { position:absolute; right:12px; top:50%; transform:translateY(-50%); color:var(--text-muted); pointer-events:none; }
 
         /* ===== BACKUP ===== */
         .backup-controls { display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding:8px 0; }
-        .backup-controls label { display:flex; align-items:center; gap:6px; cursor:pointer; color:var(--text-primary); font-size:calc(var(--font-size-base)*0.85); }
+        .backup-controls label { display:flex; align-items:center; gap:6px; cursor:pointer; color:var(--text-primary); font-size:calc(var(--font-size-base)*0.85); touch-action:manipulation; }
         .backup-controls input[type="checkbox"] { width:auto; accent-color:var(--accent); }
         .backup-controls .status { font-size:calc(var(--font-size-base)*0.75); color:var(--text-muted); }
 
@@ -672,14 +673,13 @@
         /* ===== TOGGLE SWITCH (mobile friendly) ===== */
         .toggle-wrap { display:flex; align-items:center; gap:12px; padding:4px 0; flex-wrap:wrap; }
         .toggle-wrap .toggle-label { font-size:calc(var(--font-size-base)*0.85); color:var(--text-primary); }
-        .toggle-switch { position:relative; display:inline-block; width:50px; height:28px; flex-shrink:0; }
+        .toggle-switch { position:relative; display:inline-block; width:50px; height:28px; flex-shrink:0; touch-action:manipulation; }
         .toggle-switch input { opacity:0; width:0; height:0; }
         .toggle-slider { position:absolute; cursor:pointer; inset:0; background:#555; border-radius:28px; transition:background 0.3s; }
         .toggle-slider::before { content:''; position:absolute; height:20px; width:20px; left:4px; bottom:4px; background:#fff; border-radius:50%; transition:transform 0.3s; }
         .toggle-switch input:checked+.toggle-slider { background:var(--accent); }
         .toggle-switch input:checked+.toggle-slider::before { transform:translateX(22px); }
         .toggle-switch input:disabled+.toggle-slider { opacity:0.5; cursor:not-allowed; }
-        /* mobile-friendly tap target */
         .toggle-switch { touch-action:manipulation; }
         .toggle-switch input { touch-action:manipulation; }
 
@@ -1231,7 +1231,7 @@
 
     <script>
         // ============================================================
-        // PARTICLE BACKGROUND
+        // PARTICLE BACKGROUND (with animation toggle support)
         // ============================================================
         (function particleBg() {
             const canvas = document.getElementById('particle-bg-canvas');
@@ -1239,6 +1239,8 @@
             let w, h;
             const dots = [];
             const count = 80;
+            let particleAnimId = null;
+            let isRunning = false;
 
             function resize() {
                 w = canvas.width = window.innerWidth;
@@ -1258,9 +1260,8 @@
                 });
             }
 
-            let particleAnimId = null;
-
             function draw() {
+                if (!isRunning) return;
                 ctx.clearRect(0, 0, w, h);
                 for (const d of dots) {
                     d.x += d.vx;
@@ -1294,24 +1295,37 @@
                 particleAnimId = requestAnimationFrame(draw);
             }
 
+            function startParticles() {
+                if (isRunning) return;
+                isRunning = true;
+                const animEnabled = localStorage.getItem('DUDE_I_AM_GAMER_ANIMATIONS') !== 'false';
+                if (animEnabled) {
+                    canvas.style.display = 'block';
+                    draw();
+                } else {
+                    isRunning = false;
+                    canvas.style.display = 'none';
+                }
+            }
+
             function stopParticles() {
+                isRunning = false;
                 if (particleAnimId) {
                     cancelAnimationFrame(particleAnimId);
                     particleAnimId = null;
                 }
                 ctx.clearRect(0, 0, w, h);
+                canvas.style.display = 'none';
             }
 
-            // Store functions globally so we can toggle
-            window._particleDraw = draw;
+            window._particleStart = startParticles;
             window._particleStop = stopParticles;
 
             const animEnabled = localStorage.getItem('DUDE_I_AM_GAMER_ANIMATIONS') !== 'false';
             if (animEnabled) {
-                draw();
+                startParticles();
             } else {
                 stopParticles();
-                canvas.style.display = 'none';
             }
         })();
 
@@ -1319,9 +1333,8 @@
         // MATRIX BACKGROUND (managed with animation toggle)
         // ============================================================
         (function initMatrix() {
-            const canvas = document.getElementById('matrix-canvas');
+            let canvas = document.getElementById('matrix-canvas');
             if (!canvas) {
-                // create it if missing
                 const c = document.createElement('canvas');
                 c.id = 'matrix-canvas';
                 c.style.cssText =
@@ -1365,9 +1378,11 @@
                 isRunning = true;
                 const animEnabled = localStorage.getItem('DUDE_I_AM_GAMER_ANIMATIONS') !== 'false';
                 if (animEnabled) {
+                    canvas.style.display = 'block';
                     drawMatrix();
                 } else {
                     isRunning = false;
+                    canvas.style.display = 'none';
                 }
             }
 
@@ -1378,6 +1393,7 @@
                     matrixAnimId = null;
                 }
                 ctx.clearRect(0, 0, w, h);
+                canvas.style.display = 'none';
             }
 
             window._matrixStart = startMatrix;
@@ -1388,7 +1404,6 @@
                 startMatrix();
             } else {
                 stopMatrix();
-                canvas.style.display = 'none';
             }
         })();
 
@@ -2325,15 +2340,11 @@
                 body.classList.remove('no-animations');
                 localStorage.setItem('DUDE_I_AM_GAMER_ANIMATIONS', 'true');
                 if (status) status.textContent = 'ON';
-                // Start particle and matrix if they exist
-                if (typeof window._particleDraw === 'function') {
-                    const canvas = document.getElementById('particle-bg-canvas');
-                    if (canvas) canvas.style.display = 'block';
-                    window._particleDraw();
+                // Start particles and matrix
+                if (typeof window._particleStart === 'function') {
+                    window._particleStart();
                 }
                 if (typeof window._matrixStart === 'function') {
-                    const canvas = document.getElementById('matrix-canvas');
-                    if (canvas) canvas.style.display = 'block';
                     window._matrixStart();
                 }
                 // Re-apply theme to restore scanlines/glitch
@@ -2345,13 +2356,9 @@
                 if (status) status.textContent = 'OFF';
                 if (typeof window._particleStop === 'function') {
                     window._particleStop();
-                    const canvas = document.getElementById('particle-bg-canvas');
-                    if (canvas) canvas.style.display = 'none';
                 }
                 if (typeof window._matrixStop === 'function') {
                     window._matrixStop();
-                    const canvas = document.getElementById('matrix-canvas');
-                    if (canvas) canvas.style.display = 'none';
                 }
                 // Hide scanlines/glitch
                 const scanlines = document.querySelector('.scanlines');
@@ -3075,10 +3082,9 @@
                 persist();
                 const data = JSON.stringify(clients, null, 2);
                 const blob = new Blob([data], { type: 'application/json' });
-                // Use a consistent filename: backup-<user>.json
                 const fileName = `backup-${currentUser}.json`;
 
-                // First, search for existing backup file for this user
+                // Search for existing backup file for this user
                 const searchResponse = await gapi.client.drive.files.list({
                     q: `name = '${fileName}' and trashed = false`,
                     fields: 'files(id, name)',
@@ -3190,7 +3196,6 @@
 
                 if (els.restoreBtn) els.restoreBtn.textContent = '⏳ Downloading...';
 
-                // Use fetch for reliable blob download
                 const downloadResponse = await fetch(
                     `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
                         headers: { 'Authorization': 'Bearer ' + accessToken }
