@@ -1599,16 +1599,11 @@
         }
 
         let clients = loadClientsForUser(currentUser);
-
-        // Clean up duplicates that may already have been created by the previous
-        // ID-first sync logic. This runs once on page load and does not upload by itself.
-        function dedupeLocalClients() {
-            const before = clients.length;
-            clients = mergeClientLists([], clients);
-            if (clients.length !== before) {
-                saveClientsForUser(currentUser, clients);
-                console.log(`Removed ${before - clients.length} duplicate client record(s).`);
-            }
+        // Clean duplicates created by the old sync key immediately on startup.
+        const cleanedInitialClients = dedupeClientList(clients);
+        if (cleanedInitialClients.length !== clients.length) {
+            clients = cleanedInitialClients;
+            saveClientsForUser(currentUser, clients);
         }
 
         function persist() {
@@ -3593,18 +3588,38 @@
         }
 
         // ===== TWO-WAY DRIVE SYNC (merge local + Drive, then upload) =====
-        // Stable merge key: prefer real client identifiers over random record IDs.
-        // A random UUID is different on phone/PC when the same client is added twice,
-        // so using id first can create duplicates on every sync.
         function clientMergeKey(c) {
+            // IMPORTANT: logical identity must come before device-generated id.
+            // The same client can have a different id on phone and PC.
             const sid = String(c?.sid || '').trim().toLowerCase();
-            const phone = String(c?.phone || '').replace(/\D/g, '');
-            const name = String(c?.name || '').trim().toLowerCase().replace(/\s+/g, ' ');
+            const phone = String(c?.phone || '').trim().toLowerCase();
+            const name = String(c?.name || '').trim().toLowerCase();
+            const key = String(c?.key || '').trim().toLowerCase();
+            const expiry = String(c?.expiry || '').trim().toLowerCase();
             if (sid) return 'sid:' + sid;
             if (phone) return 'phone:' + phone;
+            if (name && key) return 'namekey:' + name + '|' + key;
+            if (name && expiry) return 'nameexp:' + name + '|' + expiry;
             if (name) return 'name:' + name;
             if (c && c.id) return 'id:' + String(c.id);
-            return 'empty:' + JSON.stringify(c || {});
+            return 'obj:' + JSON.stringify(c);
+        }
+
+        function dedupeClientList(data) {
+            const result = [];
+            const index = new Map();
+            (Array.isArray(data) ? data : []).forEach(item => {
+                if (!item || typeof item !== 'object') return;
+                const key = clientMergeKey(item);
+                if (index.has(key)) {
+                    const i = index.get(key);
+                    result[i] = { ...result[i], ...item };
+                } else {
+                    index.set(key, result.length);
+                    result.push({ ...item });
+                }
+            });
+            return result;
         }
 
         function mergeClientLists(localData, remoteData) {
@@ -3614,23 +3629,19 @@
                 if (!item || typeof item !== 'object') return;
                 const key = clientMergeKey(item);
                 if (index.has(key)) {
+                    // Prefer the most complete/newer object while preserving fields
+                    // from both devices. This is mainly for simultaneous additions.
                     const i = index.get(key);
-                    // Local data is added last, so local edits win when both devices
-                    // contain the same logical client. Missing fields are preserved.
                     result[i] = { ...result[i], ...item };
                 } else {
                     index.set(key, result.length);
                     result.push({ ...item });
                 }
             };
-            // Remote first, local second = local copy wins on conflicts.
             (Array.isArray(remoteData) ? remoteData : []).forEach(add);
             (Array.isArray(localData) ? localData : []).forEach(add);
-            return result;
+            return dedupeClientList(result);
         }
-
-        // Deduplicate any records already stored locally from earlier sync attempts.
-        dedupeLocalClients();
 
         async function getDriveBackupFile() {
             const fileName = `backup-${currentUser}.json`;
