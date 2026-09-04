@@ -3247,7 +3247,7 @@
             if (els.restoreBtn) els.restoreBtn.disabled = !connected;
 
             isConnected = connected;
-            localStorage.setItem('drive_connected', connected ? 'true' : 'false');
+            if (connected) { localStorage.setItem('drive_connected', 'true'); localStorage.removeItem('drive_user_disconnected'); } else if (localStorage.getItem('drive_user_disconnected') === 'true') { localStorage.setItem('drive_connected', 'false'); }
             if (connected && accessToken) {
                 localStorage.setItem('drive_token', accessToken);
                 // If drive connects, re-check auto states to ensure intervals are running
@@ -3306,8 +3306,9 @@
 
                     // Best-effort silent reconnect. If this browser already has an
                     // authorized Google session, no manual Connect click is needed.
+                    startDriveSessionKeepAlive();
                     setTimeout(() => {
-                        if (!isConnected && tokenClient) {
+                        if (!isConnected && tokenClient && localStorage.getItem('drive_user_disconnected') !== 'true') {
                             try {
                                 tokenClient.requestAccessToken({ prompt: 'none' });
                             } catch (e) {
@@ -3363,7 +3364,9 @@
                         gapi.client.setToken(null);
                         updateDriveUI(false, 'Refreshing Google Drive session...');
                         setTimeout(() => requestSilentDriveAuth().catch(() => {
-                            updateDriveUI(false, 'Google session needs permission again.');
+                            // Keep the remembered connection state. A later retry can
+                            // recover when the Google session becomes available.
+                            updateDriveUI(false, 'Waiting for Google session...');
                         }), 300);
                     }
                 }
@@ -3401,6 +3404,30 @@
             });
             return silentAuthInFlight;
         }
+
+        // Keep the Google Drive connection alive across reloads and token expiry.
+        // Google access tokens are short-lived, so we silently request a fresh token
+        // instead of treating expiry as a logout. The user can still explicitly
+        // disconnect with the Disconnect button.
+        let driveSessionTimer = null;
+        function startDriveSessionKeepAlive() {
+            if (driveSessionTimer) clearInterval(driveSessionTimer);
+            if (localStorage.getItem('drive_user_disconnected') === 'true') return;
+            driveSessionTimer = setInterval(async () => {
+                if (!navigator.onLine || localStorage.getItem('drive_user_disconnected') === 'true') return;
+                try { await ensureDriveSession(); } catch (e) { console.warn('Drive keep-alive:', e); }
+            }, 5 * 60 * 1000);
+        }
+
+        window.addEventListener('online', async () => {
+            if (localStorage.getItem('drive_user_disconnected') === 'true') return;
+            try {
+                const ok = await ensureDriveSession();
+                if (ok && localStorage.getItem('DRIVE_PENDING_BACKUP') === 'true') {
+                    setTimeout(() => triggerDriveBackup(), 500);
+                }
+            } catch (e) { console.warn('Drive reconnect after online:', e); }
+        });
 
         async function ensureDriveSession() {
             if (!navigator.onLine) return false;
@@ -3445,6 +3472,7 @@
             gapi.client.setToken({ access_token: accessToken });
             localStorage.setItem('drive_token', accessToken);
             localStorage.setItem('drive_connected', 'true');
+            localStorage.removeItem('drive_user_disconnected');
             updateDriveUI(true, '✅ Connected to Google Drive');
             checkLastBackup();
             loadDriveAutoSyncState();
@@ -3511,6 +3539,7 @@
             if (els.text2) els.text2.textContent = '⏳ Connecting...';
 
             try {
+                localStorage.removeItem('drive_user_disconnected');
                 tokenClient.requestAccessToken({ prompt: 'consent' });
             } catch (e) {
                 console.error('Token request error:', e);
@@ -3527,7 +3556,8 @@
             }
             accessToken = null;
             localStorage.removeItem('drive_token');
-            localStorage.removeItem('drive_connected');
+            localStorage.setItem('drive_connected', 'false');
+            localStorage.setItem('drive_user_disconnected', 'true');
             gapi.client.setToken(null);
             updateDriveUI(false, 'Disconnected');
             const els = getDriveElements();
@@ -3970,6 +4000,7 @@
             const savedConnected = localStorage.getItem('drive_connected') === 'true';
             const savedToken = localStorage.getItem('drive_token');
             if (savedConnected && savedToken) {
+                startDriveSessionKeepAlive();
                 accessToken = savedToken;
                 updateDriveUI(true, '✅ Connected to Google Drive');
                 checkLastBackup();
