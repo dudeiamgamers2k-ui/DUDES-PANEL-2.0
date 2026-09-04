@@ -2674,27 +2674,30 @@
         }
 
         async function checkAndAutoRestore() {
-            if (!isConnected || !accessToken || !driveAutoRestoreEnabled) return;
-            // Skip if a backup is pending (debounce timer active)
+            if (!isConnected || !accessToken || !driveAutoRestoreEnabled || !navigator.onLine) return;
             if (backupDebounceTimer) return;
             try {
-                const fileName = `backup-${currentUser}.json`;
-                const searchResponse = await gapi.client.drive.files.list({
-                    q: `name = '${fileName}' and trashed = false`,
-                    fields: 'files(id, name, modifiedTime)',
-                });
-                const files = searchResponse.result.files || [];
-                if (files.length === 0) return;
-                const driveModTime = files[0].modifiedTime ? new Date(files[0].modifiedTime).getTime() : 0;
-                const lastBackupTime = parseInt(localStorage.getItem('drive_last_backup_time_ms') || '0');
-                if (driveModTime > lastBackupTime + 5000) {
-                    showToast('Newer backup found on Drive, auto-restoring...', 'warning', 'Auto Restore');
-                    await driveRestore(true);
-                    localStorage.setItem('drive_last_backup_time_ms', String(driveModTime));
-                    showToast('Auto restore completed successfully!', 'success', 'Auto Restore');
+                const { fileName, file } = await getDriveBackupFile();
+                if (!file?.id) return;
+                const driveModTime = file.modifiedTime ? new Date(file.modifiedTime).getTime() : 0;
+                const lastSeen = parseInt(localStorage.getItem('drive_last_seen_modified_ms') || '0');
+                if (driveModTime <= lastSeen) return;
+
+                const remoteClients = await downloadDriveBackup(file.id);
+                const merged = mergeClientLists(clients, remoteClients);
+                const before = JSON.stringify(clients);
+                const after = JSON.stringify(merged);
+                clients = merged;
+                saveClientsForUser(currentUser, clients); // local only; do not recursively trigger backup
+                localStorage.setItem('drive_last_seen_modified_ms', String(driveModTime));
+                localStorage.setItem('drive_last_backup_time_ms', String(driveModTime));
+
+                if (before !== after) {
+                    render();
+                    showToast(`☁️ Synced newer Drive data: ${clients.length} clients.`, 'success', 'Auto Restore');
                 }
             } catch (e) {
-                console.warn('Auto restore check error:', e);
+                console.warn('Auto restore/sync check error:', e);
             }
         }
 
@@ -3465,7 +3468,8 @@
                 } else {
                     setDriveError('Authentication failed: ' + resp.error);
                 }
-                updateDriveUI(false, '❌ Auth error');
+                if (silentAuthInFlight) updateDriveUI(false, '⏳ Reconnecting to Google Drive...');
+                else updateDriveUI(false, '❌ Auth error');
                 return;
             }
             accessToken = resp.access_token;
@@ -3568,98 +3572,132 @@
             stopDriveAutoRestore(false, true);
         }
 
-        // ===== Backup to Drive (single file, overwrites) =====
+        // ===== TWO-WAY DRIVE SYNC (merge local + Drive, then upload) =====
+        function clientMergeKey(c) {
+            if (c && c.id) return 'id:' + String(c.id);
+            const sid = String(c?.sid || '').trim().toLowerCase();
+            const phone = String(c?.phone || '').trim().toLowerCase();
+            const name = String(c?.name || '').trim().toLowerCase();
+            if (sid) return 'sid:' + sid;
+            if (phone) return 'phone:' + phone;
+            return 'name:' + name;
+        }
+
+        function mergeClientLists(localData, remoteData) {
+            const result = [];
+            const index = new Map();
+            const add = (item) => {
+                if (!item || typeof item !== 'object') return;
+                const key = clientMergeKey(item);
+                if (index.has(key)) {
+                    // Prefer the most complete/newer object while preserving fields
+                    // from both devices. This is mainly for simultaneous additions.
+                    const i = index.get(key);
+                    result[i] = { ...result[i], ...item };
+                } else {
+                    index.set(key, result.length);
+                    result.push({ ...item });
+                }
+            };
+            (Array.isArray(remoteData) ? remoteData : []).forEach(add);
+            (Array.isArray(localData) ? localData : []).forEach(add);
+            return result;
+        }
+
+        async function getDriveBackupFile() {
+            const fileName = `backup-${currentUser}.json`;
+            const searchResponse = await gapi.client.drive.files.list({
+                q: `name = '${fileName}' and trashed = false`,
+                fields: 'files(id, name, modifiedTime)',
+                orderBy: 'modifiedTime desc'
+            });
+            const files = searchResponse.result.files || [];
+            return { fileName, file: files[0] || null };
+        }
+
+        async function downloadDriveBackup(fileId) {
+            const response = await fetch(
+                `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+                    headers: { 'Authorization': 'Bearer ' + accessToken }
+                });
+            if (!response.ok) throw new Error('Download failed (HTTP ' + response.status + ')');
+            const data = await response.json();
+            return Array.isArray(data) ? data : [];
+        }
+
+        async function uploadDriveBackup(fileId, fileName, data) {
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const metadata = { name: fileName };
+            const form = new FormData();
+            form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+            form.append('file', blob);
+            const url = fileId
+                ? `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=multipart`
+                : 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
+            const response = await fetch(url, {
+                method: fileId ? 'PATCH' : 'POST',
+                headers: new Headers({ 'Authorization': 'Bearer ' + accessToken }),
+                body: form,
+            });
+            if (!response.ok) {
+                let msg = 'Upload failed (HTTP ' + response.status + ')';
+                try { const err = await response.json(); msg = err.error?.message || msg; } catch (_) {}
+                throw new Error(msg);
+            }
+            return fileId || (await response.json()).id;
+        }
+
         async function driveBackup(silent = false) {
             if (!isConnected || !accessToken) {
                 if (!silent) setDriveError('Not connected to Google Drive. Please connect first.');
-                return;
+                return false;
             }
             const els = getDriveElements();
             try {
                 if (els.backupBtn && !silent) {
                     els.backupBtn.disabled = true;
-                    els.backupBtn.textContent = '⏳ Uploading...';
+                    els.backupBtn.textContent = '⏳ Syncing...';
                 }
 
-                // Data has already been persisted by persist() before this backup was scheduled.
-                // Do not call persist() here, otherwise auto-backup recursively schedules itself.
-                const data = JSON.stringify(clients, null, 2);
-                const blob = new Blob([data], { type: 'application/json' });
-                const fileName = `backup-${currentUser}.json`;
+                // IMPORTANT: fetch the current Drive copy first, then MERGE it with
+                // this device's local data. This prevents phone/PC additions from
+                // overwriting each other.
+                const { fileName, file } = await getDriveBackupFile();
+                let remoteClients = [];
+                if (file?.id) remoteClients = await downloadDriveBackup(file.id);
 
-                // Search for existing backup file for this user
-                const searchResponse = await gapi.client.drive.files.list({
-                    q: `name = '${fileName}' and trashed = false`,
-                    fields: 'files(id, name)',
-                });
-                const existingFiles = searchResponse.result.files || [];
-                let fileId = null;
-
-                if (existingFiles.length > 0) {
-                    // Overwrite existing file
-                    fileId = existingFiles[0].id;
-                    const metadata = { name: fileName };
-                    const form = new FormData();
-                    form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-                    form.append('file', blob);
-                    const response = await fetch(
-                        `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=multipart`, {
-                            method: 'PATCH',
-                            headers: new Headers({ 'Authorization': 'Bearer ' + accessToken }),
-                            body: form,
-                        });
-                    if (!response.ok) {
-                        const err = await response.json();
-                        throw new Error(err.error?.message || 'Upload failed (HTTP ' + response.status + ')');
-                    }
-                } else {
-                    // Create new file
-                    const metadata = { name: fileName, parents: ['root'] };
-                    const form = new FormData();
-                    form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-                    form.append('file', blob);
-                    const response = await fetch(
-                        'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-                            method: 'POST',
-                            headers: new Headers({ 'Authorization': 'Bearer ' + accessToken }),
-                            body: form,
-                        });
-                    if (!response.ok) {
-                        const err = await response.json();
-                        throw new Error(err.error?.message || 'Upload failed (HTTP ' + response.status + ')');
-                    }
-                    const result = await response.json();
-                    fileId = result.id;
-                }
+                const merged = mergeClientLists(clients, remoteClients);
+                clients = merged;
+                saveClientsForUser(currentUser, clients); // local save, no recursive backup
+                const fileId = await uploadDriveBackup(file?.id || null, fileName, clients);
 
                 localStorage.setItem('drive_last_backup_file', fileName);
                 localStorage.setItem('drive_last_backup_time', new Date().toISOString());
                 localStorage.removeItem('DRIVE_PENDING_BACKUP');
                 localStorage.setItem('drive_last_backup_time_ms', String(Date.now()));
                 if (els.lastBackup) {
-                    els.lastBackup.textContent = '✅ Last backup: ' + new Date().toLocaleString() + ' (File: ' + fileName +
-                        ')';
+                    els.lastBackup.textContent = '✅ Last sync: ' + new Date().toLocaleString() + ' (File: ' + fileName + ')';
                 }
-                if (els.text && !silent) els.text.textContent = '✅ Connected - Last backup: ' + fileName;
-                if (els.text2 && !silent) els.text2.textContent = '✅ Connected - Last backup: ' + fileName;
-
+                if (els.text && !silent) els.text.textContent = '✅ Synced - ' + fileName;
+                if (els.text2 && !silent) els.text2.textContent = '✅ Synced - ' + fileName;
                 if (els.backupBtn && !silent) {
                     els.backupBtn.textContent = '⬆ Backup to Drive';
                     els.backupBtn.disabled = false;
                 }
-                if (!silent) {
-                    showToast('Backup to Drive completed successfully!', 'success', 'Drive Backup');
-                }
-
+                if (!silent) showToast(`✅ Synced ${clients.length} clients to Drive.`, 'success', 'Drive Sync');
+                render();
+                return !!fileId;
             } catch (e) {
-                console.error('Backup error:', e);
+                console.error('Backup/sync error:', e);
+                localStorage.setItem('DRIVE_PENDING_BACKUP', 'true');
                 if (!silent) {
-                    setDriveError('Backup failed: ' + e.message);
+                    setDriveError('Sync failed: ' + e.message);
                     if (els.backupBtn) {
                         els.backupBtn.textContent = '⬆ Backup to Drive';
                         els.backupBtn.disabled = false;
                     }
                 }
+                return false;
             }
         }
 
