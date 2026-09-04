@@ -2004,6 +2004,8 @@
                     <div class="bulk-actions">
                         <button class="btn danger" id="emptyTrashBtn" onclick="emptyTrash()">🗑 Empty Trash</button>
                         <button class="btn" id="restoreAllTrashBtn" onclick="restoreAllTrash()">↩ Restore All</button>
+                        <button class="btn primary" id="restoreSelectedTrashBtn" onclick="restoreSelectedTrash()" disabled>↩ Restore (0)</button>
+                        <button class="btn danger" id="deleteSelectedTrashBtn" onclick="deleteSelectedTrash()" disabled>🗑 Delete (0)</button>
                         <span style="font-size:calc(var(--font-size-base)*0.75);color:var(--text-muted);margin-left:8px;" id="trashCountInfo">0 items</span>
                     </div>
                 </div>
@@ -3076,11 +3078,11 @@
 
         function updateTrashBulkState() {
             const checked = document.querySelectorAll('.trash-checkbox:checked');
-            const btn = document.getElementById('restoreSelectedTrashBtn');
+            const restoreBtn = document.getElementById('restoreSelectedTrashBtn');
             const delBtn = document.getElementById('deleteSelectedTrashBtn');
-            if (btn) {
-                btn.disabled = checked.length === 0;
-                btn.textContent = `↩ Restore (${checked.length})`;
+            if (restoreBtn) {
+                restoreBtn.disabled = checked.length === 0;
+                restoreBtn.textContent = `↩ Restore (${checked.length})`;
             }
             if (delBtn) {
                 delBtn.disabled = checked.length === 0;
@@ -3092,6 +3094,7 @@
         // TRASH SYSTEM
         // ============================================================
         function moveToTrash(client) {
+            // Preserve the original sid and all fields
             const trashed = { ...client, deletedAt: new Date().toISOString() };
             trashItems.push(trashed);
             persist();
@@ -3102,9 +3105,8 @@
             const idx = trashItems.findIndex(t => t.id === id);
             if (idx === -1) { showToast('Item not found in trash.', 'error', 'Error'); return; }
             const item = trashItems[idx];
-            // Remove the deletedAt field before restoring
+            // Remove deletedAt, preserve sid and all other fields
             const { deletedAt, ...client } = item;
-            // Make sure we preserve the original id and sid correctly
             clients.push(client);
             trashItems.splice(idx, 1);
             persist();
@@ -3941,6 +3943,7 @@
                         `Found ${imported.length} client(s).\n\nPreview:\n${preview}\n${imported.length > 3 ? '... and more' : ''}\n\nThis will REPLACE all ${clients.length} existing clients. Continue?`;
                     if (!confirm(msg)) return;
 
+                    // Normalize imported data, preserving sid and id separately
                     const normalized = imported.map(c => {
                         const mapField = (key) => {
                             const aliasMap = {
@@ -3949,7 +3952,7 @@
                                 'phone': ['phone', 'Phone', 'PHONE', 'Wp Num', 'WpNum', 'wp num',
                                     'number', 'Number'
                                 ],
-                                'sid': ['sid', 'SID', 'Sid', 'sid'],
+                                'sid': ['sid', 'SID', 'Sid', 'studentId', 'StudentId'],
                                 'id': ['id', 'ID', 'uuid', 'UUID'],
                                 'key': ['key', 'Key', 'KEY', 'K', 'License'],
                                 'price': ['price', 'Price', 'PRICE', 'total', 'Total', 'TOTAL', 'Pay',
@@ -3990,6 +3993,9 @@
                         for (const [key, value] of Object.entries(c)) {
                             if (value === undefined || value === null || value === '') continue;
                             const mapped = mapField(key);
+                            // Ensure we don't overwrite sid with id or vice versa
+                            if (mapped === 'id' && obj.sid) continue; // keep existing sid if set
+                            if (mapped === 'sid' && obj.id) continue; // keep existing id if set
                             if (['price', 'discount', 'paid', 'due', 'finalPrice', 'monthlyFee',
                                     'feePaid', 'feeDue'
                                 ].includes(mapped)) {
@@ -4336,6 +4342,7 @@
             if (els.text) els.text.textContent = '⏳ Connecting...';
             if (els.text2) els.text2.textContent = '⏳ Connecting...';
             try {
+                // Use 'consent' to force showing the account picker and avoid silent failures
                 tokenClient.requestAccessToken({ prompt: 'consent' });
             } catch (e) { console.error('Token request error:', e);
                 setDriveError('Failed to open authentication popup. Please allow popups.');
@@ -4416,8 +4423,9 @@
                 if (!silent) { showToast('Backup to Drive completed successfully!', 'success', 'Drive Backup'); }
             } catch (e) {
                 console.error('Backup error:', e);
+                let errorMsg = e.message || 'Unknown error';
                 if (!silent) {
-                    setDriveError('Backup failed: ' + e.message);
+                    setDriveError('Backup failed: ' + errorMsg);
                     if (els.backupBtn) { els.backupBtn.textContent = '⬆ Backup to Drive';
                         els.backupBtn.disabled = false; }
                 }
@@ -4477,6 +4485,7 @@
                         }
                     }
                 }
+                // Normalize imported data (same as importData)
                 const normalized = data.map(c => {
                     const mapField = (key) => {
                         const aliasMap = {
@@ -4485,7 +4494,7 @@
                             'phone': ['phone', 'Phone', 'PHONE', 'Wp Num', 'WpNum', 'wp num',
                                 'number', 'Number'
                             ],
-                            'sid': ['sid', 'SID', 'Sid', 'sid'],
+                            'sid': ['sid', 'SID', 'Sid', 'studentId', 'StudentId'],
                             'id': ['id', 'ID', 'uuid', 'UUID'],
                             'key': ['key', 'Key', 'KEY', 'K', 'License'],
                             'price': ['price', 'Price', 'PRICE', 'total', 'Total', 'TOTAL', 'Pay',
@@ -4526,6 +4535,8 @@
                     for (const [key, value] of Object.entries(c)) {
                         if (value === undefined || value === null || value === '') continue;
                         const mapped = mapField(key);
+                        if (mapped === 'id' && obj.sid) continue;
+                        if (mapped === 'sid' && obj.id) continue;
                         if (['price', 'discount', 'paid', 'due', 'finalPrice', 'monthlyFee',
                                 'feePaid', 'feeDue'
                             ].includes(mapped)) {
@@ -4567,7 +4578,7 @@
                     return;
                 }
                 clients = valid;
-                trashItems = loadTrashForUser(currentUser);
+                // Trash items are not restored, keep current trash
                 persist();
                 render();
                 if (!silent) {
@@ -4578,8 +4589,9 @@
                     els.restoreBtn.disabled = false; }
             } catch (e) {
                 console.error('Restore error:', e);
+                let errorMsg = e.message || 'Unknown error';
                 if (!silent) {
-                    setDriveError('Restore failed: ' + e.message);
+                    setDriveError('Restore failed: ' + errorMsg);
                     if (els.restoreBtn) { els.restoreBtn.textContent = '⬇ Restore from Drive';
                         els.restoreBtn.disabled = false; }
                 }
@@ -4848,24 +4860,8 @@
         });
         document.getElementById('trashSearch').addEventListener('input', render);
 
-        // Restore selected from trash buttons
-        const restoreSelectedBtn = document.createElement('button');
-        restoreSelectedBtn.className = 'btn primary';
-        restoreSelectedBtn.id = 'restoreSelectedTrashBtn';
-        restoreSelectedBtn.textContent = '↩ Restore (0)';
-        restoreSelectedBtn.disabled = true;
-        restoreSelectedBtn.onclick = restoreSelectedTrash;
-        const deleteSelectedTrashBtn = document.createElement('button');
-        deleteSelectedTrashBtn.className = 'btn danger';
-        deleteSelectedTrashBtn.id = 'deleteSelectedTrashBtn';
-        deleteSelectedTrashBtn.textContent = '🗑 Delete (0)';
-        deleteSelectedTrashBtn.disabled = true;
-        deleteSelectedTrashBtn.onclick = deleteSelectedTrash;
-        const bulkActions = document.querySelector('#trash .bulk-actions');
-        if (bulkActions) {
-            bulkActions.appendChild(restoreSelectedBtn);
-            bulkActions.appendChild(deleteSelectedTrashBtn);
-        }
+        // Restore selected from trash buttons (already in HTML)
+        // They are defined with onclick in the toolbar
 
         document.getElementById('googleDriveBtn').onclick = () => {
             document.getElementById('googleDriveModal').classList.add('show');
