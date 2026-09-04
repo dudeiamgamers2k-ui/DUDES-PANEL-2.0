@@ -332,8 +332,6 @@
         .btn.green:hover { background:rgba(0,200,80,0.3); border-color:#27ae60; box-shadow:0 0 30px rgba(46,204,113,0.2); }
         .btn.warning { background:rgba(255,165,0,0.2); border-color:#f39c12; color:#f39c12; }
         .btn.warning:hover { background:rgba(255,165,0,0.3); border-color:#e67e22; box-shadow:0 0 30px rgba(243,156,18,0.2); }
-        .btn.warning-bg { background:rgba(255,200,0,0.15); border-color:#f39c12; color:#f39c12; }
-        .btn.warning-bg:hover { background:rgba(255,200,0,0.25); border-color:#e67e22; box-shadow:0 0 30px rgba(243,156,18,0.15); }
 
         /* ===== STATS ===== */
         .stats {
@@ -538,7 +536,6 @@
         .badge { padding:4px 10px; border-radius:var(--border-radius); font-size:calc(var(--font-size-base)*0.7); background:rgba(0,40,20,0.5); color:#68e2ad; border:1px solid var(--border-color); font-family:var(--font-family); transition:all 0.3s; }
         .badge.expired { background:rgba(40,0,0,0.4); color:#ff91a5; border-color:rgba(255,50,50,0.2); animation:badgePulse 1.5s ease-in-out infinite; }
         @keyframes badgePulse { 0%,100%{box-shadow:0 0 5px rgba(255,0,0,0.1);} 50%{box-shadow:0 0 20px rgba(255,0,0,0.2);} }
-        .badge.offline { background:rgba(255,165,0,0.2); color:#f39c12; border-color:#f39c12; }
 
         /* ===== MODAL ===== */
         .modal { position:fixed; inset:0; background:rgba(0,10,5,0.85); display:none; align-items:center; justify-content:center; padding:18px; z-index:100; backdrop-filter:blur(6px); }
@@ -758,31 +755,6 @@
             #toast-container .toast { padding:12px 14px; }
         }
 
-        /* ===== DUPLICATE CLEANUP UI ===== */
-        .duplicate-summary {
-            background:var(--bg-card);
-            border:1px solid var(--border-color);
-            border-radius:var(--border-radius);
-            padding:16px;
-            margin:10px 0;
-            max-height:300px;
-            overflow:auto;
-        }
-        .duplicate-summary .dup-group {
-            border-bottom:1px solid var(--border-color);
-            padding:8px 0;
-        }
-        .duplicate-summary .dup-group:last-child { border-bottom:none; }
-        .dup-count-badge {
-            display:inline-block;
-            background:rgba(255,50,50,0.2);
-            color:#ff7089;
-            padding:2px 10px;
-            border-radius:12px;
-            font-size:calc(var(--font-size-base)*0.7);
-            margin-left:8px;
-        }
-
         /* ===== PRINT ===== */
         @media print {
             .no-print { display:none !important; }
@@ -903,11 +875,7 @@
         <main class="main">
             <div class="top">
                 <div><h1 id="pageTitle">Dashboard</h1><p>Manage clients, panel keys, limits, expiry & payments.</p></div>
-                <div class="no-print">
-                    <button class="btn" id="backupBtn">⬇ Export</button>
-                    <button class="btn primary" id="addBtn">+ Add Client</button>
-                    <button class="btn warning-bg small" id="removeDuplicatesBtn">🧹 Remove Duplicates</button>
-                </div>
+                <div class="no-print"><button class="btn" id="backupBtn">⬇ Export</button><button class="btn primary" id="addBtn">+ Add Client</button></div>
             </div>
 
             <section id="dashboard">
@@ -936,7 +904,6 @@
                             <div class="more-card"><div class="label">⏳ Pending Payments</div><div class="value" id="morePending">0</div></div>
                             <div class="more-card"><div class="label">🏷️ Most Used Panel</div><div class="value" id="moreTopPanel">—</div></div>
                             <div class="more-card"><div class="label">📅 Next Expiry</div><div class="value" id="moreNextExpiry">—</div></div>
-                            <div class="more-card"><div class="label">📶 Status</div><div class="value" id="moreStatus">🟢 Online</div></div>
                         </div>
                     </div>
                 </div>
@@ -1094,29 +1061,12 @@
         </div>
     </div>
 
-    <!-- DUPLICATE CLEANUP MODAL -->
-    <div class="modal" id="duplicateModal">
-        <div class="box" style="max-width:700px;">
-            <div class="head"><b>🧹 Remove Duplicate Clients</b><button class="btn" id="closeDuplicateModal">✕</button></div>
-            <div class="body">
-                <div id="duplicateContent">
-                    <p style="color:var(--text-muted);margin-bottom:12px;">Scanning for duplicates...</p>
-                    <div class="duplicate-summary" id="duplicateSummary"></div>
-                    <div class="foot" style="margin-top:16px;">
-                        <button class="btn" id="cancelDuplicate">Cancel</button>
-                        <button class="btn danger" id="confirmDuplicateCleanup" disabled>Remove Duplicates</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- SETTINGS MODAL (with Client ID field) -->
     <div class="modal" id="settingsModal">
         <div class="box" style="max-width:820px;">
             <div class="head"><b>⚙ Settings</b><button class="btn" id="closeSettings">✕</button></div>
             <div class="body">
-                <!-- ANIMATION TOGGLE -->
+                <!-- ANIMATION TOGGLE (mobile friendly) -->
                 <div class="section" style="margin-top:0;">🎬 Animations</div>
                 <div class="toggle-wrap">
                     <span class="toggle-label">Enable site animations</span>
@@ -1272,11 +1222,10 @@
                     <button class="btn primary" id="exportDataBtn">📤 Export All Data (JSON)</button>
                     <button class="btn" id="importDataBtn">📥 Import Data (JSON)</button>
                     <input type="file" id="importFileInput" accept=".json" style="display:none;">
-                    <button class="btn warning-bg" id="removeDuplicatesSettingsBtn">🧹 Remove Duplicates</button>
                 </div>
                 <p style="font-size:calc(var(--font-size-base)*0.7); color:var(--text-muted); margin-top:4px;">Export or import the entire client dataset for the current user. Import will replace all existing data.</p>
 
-                <!-- ===== GOOGLE DRIVE CONNECTION ===== -->
+                <!-- ===== GOOGLE DRIVE CONNECTION (with Client ID field) ===== -->
                 <div class="section" style="margin-top:16px;">☁ Google Drive</div>
                 <div class="field">
                     <label>Google Drive Client ID</label>
@@ -1296,7 +1245,7 @@
                 </div>
                 <p style="font-size:calc(var(--font-size-base)*0.7); color:var(--text-muted); margin-top:4px;">Enter your Client ID, save settings, then click Connect.</p>
 
-                <!-- ===== AUTO SYNC & AUTO RESTORE (ON by default, persistent) ===== -->
+                <!-- ===== AUTO SYNC & AUTO RESTORE (persistent) ===== -->
                 <div class="section" style="margin-top:16px;">🔄 Drive Auto Sync</div>
                 <div class="grid">
                     <div class="field">
@@ -1308,7 +1257,7 @@
                             </label>
                             <span style="font-size:calc(var(--font-size-base)*0.75);color:var(--text-muted);" id="driveAutoSyncStatus">On (1s)</span>
                         </div>
-                        <div style="font-size:calc(var(--font-size-base)*0.65);color:var(--text-muted);margin-top:4px;">Saves changes to Drive 1 second after each local change.</div>
+                        <div style="font-size:calc(var(--font-size-base)*0.65);color:var(--text-muted);margin-top:4px;">⚠️ WARNING: 1-second backup is very frequent. Use with caution.</div>
                     </div>
                     <div class="field">
                         <label>Auto Restore</label>
@@ -1319,7 +1268,7 @@
                             </label>
                             <span style="font-size:calc(var(--font-size-base)*0.75);color:var(--text-muted);" id="driveAutoRestoreStatus">On (10s)</span>
                         </div>
-                        <div style="font-size:calc(var(--font-size-base)*0.65);color:var(--text-muted);margin-top:4px;">Checks Drive every 10 seconds for newer data and merges it.</div>
+                        <div style="font-size:calc(var(--font-size-base)*0.65);color:var(--text-muted);margin-top:4px;">Automatically restores from Drive every 10 seconds if a newer backup exists.</div>
                     </div>
                 </div>
 
@@ -1387,8 +1336,18 @@
             const container = document.getElementById('toast-container');
             if (!container) return;
 
-            const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
-            const titles = { success: 'Success', error: 'Error', warning: 'Warning', info: 'Info' };
+            const icons = {
+                success: '✅',
+                error: '❌',
+                warning: '⚠️',
+                info: 'ℹ️'
+            };
+            const titles = {
+                success: 'Success',
+                error: 'Error',
+                warning: 'Warning',
+                info: 'Info'
+            };
 
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
@@ -1418,268 +1377,6 @@
             }
 
             return toast;
-        }
-
-        // ============================================================
-        // OFFLINE / NETWORK DETECTION
-        // ============================================================
-        let isOnline = navigator.onLine;
-        let syncQueue = [];
-        let isSyncing = false;
-        let networkListeners = [];
-
-        function updateOnlineStatus() {
-            isOnline = navigator.onLine;
-            const statusEl = document.getElementById('moreStatus');
-            if (statusEl) {
-                statusEl.textContent = isOnline ? '🟢 Online' : '🔴 Offline (local only)';
-                statusEl.style.color = isOnline ? '#2ecc71' : '#f39c12';
-            }
-            // Show badge on dashboard
-            const activeBadge = document.querySelector('.stat .badge.offline');
-            if (!isOnline) {
-                // Add offline indicator if not present
-                const stats = document.querySelector('.stats');
-                if (stats && !stats.querySelector('.offline-badge')) {
-                    const badge = document.createElement('div');
-                    badge.className = 'stat offline-badge';
-                    badge.style.cssText = 'grid-column:1/-1;padding:8px;text-align:center;border-color:#f39c12;';
-                    badge.innerHTML = '<span style="color:#f39c12;">⚠️ OFFLINE MODE — Changes saved locally, will sync when online</span>';
-                    stats.parentNode.insertBefore(badge, stats.nextSibling);
-                }
-            } else {
-                const badge = document.querySelector('.offline-badge');
-                if (badge) badge.remove();
-                // Try to sync pending changes
-                if (syncQueue.length > 0) {
-                    showToast(`📡 Online — Syncing ${syncQueue.length} pending changes...`, 'info', 'Syncing');
-                    processSyncQueue();
-                }
-            }
-        }
-
-        // ============================================================
-        // SYNC QUEUE — stores operations to replay when online
-        // ============================================================
-        function enqueueSyncOperation(op) {
-            syncQueue.push({ ...op, timestamp: Date.now() });
-            localStorage.setItem('DUDE_SYNC_QUEUE', JSON.stringify(syncQueue));
-            if (isOnline) {
-                processSyncQueue();
-            }
-        }
-
-        function loadSyncQueue() {
-            try {
-                const data = localStorage.getItem('DUDE_SYNC_QUEUE');
-                syncQueue = data ? JSON.parse(data) : [];
-                // Clean up old entries (older than 7 days)
-                const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
-                syncQueue = syncQueue.filter(op => op.timestamp > cutoff);
-                localStorage.setItem('DUDE_SYNC_QUEUE', JSON.stringify(syncQueue));
-            } catch (e) {
-                syncQueue = [];
-            }
-        }
-
-        async function processSyncQueue() {
-            if (!isOnline || isSyncing || syncQueue.length === 0) return;
-            isSyncing = true;
-
-            try {
-                // We need Drive connected to actually sync
-                if (!isConnected || !accessToken) {
-                    showToast('⚠️ Drive not connected. Queue will retry later.', 'warning', 'Sync Paused');
-                    isSyncing = false;
-                    return;
-                }
-
-                // Process each operation
-                const ops = [...syncQueue];
-                let processed = 0;
-
-                for (const op of ops) {
-                    try {
-                        // Re-apply the operation to the current data
-                        if (op.type === 'add') {
-                            // Check if client already exists (by id)
-                            const existing = clients.find(c => c.id === op.data.id);
-                            if (!existing) {
-                                clients.push(op.data);
-                            } else {
-                                // Update existing
-                                Object.assign(existing, op.data);
-                            }
-                        } else if (op.type === 'update') {
-                            const existing = clients.find(c => c.id === op.data.id);
-                            if (existing) {
-                                // Merge: keep newer fields
-                                const localTime = existing._updatedAt || 0;
-                                const opTime = op.data._updatedAt || 0;
-                                if (opTime > localTime) {
-                                    Object.assign(existing, op.data);
-                                    existing._updatedAt = opTime;
-                                }
-                            }
-                        } else if (op.type === 'delete') {
-                            clients = clients.filter(c => c.id !== op.id);
-                        }
-                        processed++;
-                    } catch (e) {
-                        console.warn('Failed to replay sync op:', op, e);
-                    }
-                }
-
-                // Remove processed ops from queue
-                if (processed > 0) {
-                    syncQueue = syncQueue.slice(processed);
-                    localStorage.setItem('DUDE_SYNC_QUEUE', JSON.stringify(syncQueue));
-                    // Save and trigger Drive backup
-                    persist();
-                    // Force Drive backup after replay
-                    if (isConnected && accessToken) {
-                        await driveBackup(true);
-                    }
-                    showToast(`✅ Synced ${processed} pending changes to Drive.`, 'success', 'Sync Complete');
-                }
-
-            } catch (e) {
-                console.error('Sync queue processing error:', e);
-            } finally {
-                isSyncing = false;
-                // If there are still items, retry
-                if (syncQueue.length > 0 && isOnline) {
-                    setTimeout(processSyncQueue, 5000);
-                }
-            }
-        }
-
-        // ============================================================
-        // DUPLICATE DETECTION & CLEANUP
-        // ============================================================
-        function findDuplicates(data) {
-            const groups = {};
-            const dups = [];
-
-            // Build a signature for each client
-            data.forEach((c, idx) => {
-                // Signature: SID > Phone > Name+Key+Panels
-                let sig = '';
-                if (c.sid && c.sid.trim()) {
-                    sig = 'sid:' + c.sid.trim().toLowerCase();
-                } else if (c.phone && c.phone.trim()) {
-                    sig = 'phone:' + c.phone.trim().toLowerCase();
-                } else {
-                    // Use name + panels + key
-                    const name = (c.name || '').trim().toLowerCase();
-                    const key = (c.key || '').trim().toLowerCase();
-                    const panels = (c.panelTypes || []).sort().join('|').toLowerCase();
-                    sig = 'namekey:' + name + '|' + key + '|' + panels;
-                }
-
-                if (!groups[sig]) groups[sig] = [];
-                groups[sig].push({ client: c, index: idx });
-            });
-
-            // Find groups with more than 1
-            for (const [sig, items] of Object.entries(groups)) {
-                if (items.length > 1) {
-                    // Keep the most recent one (by date or _updatedAt)
-                    const sorted = items.sort((a, b) => {
-                        const dA = a.client._updatedAt || new Date(a.client.date || 0).getTime();
-                        const dB = b.client._updatedAt || new Date(b.client.date || 0).getTime();
-                        return dB - dA;
-                    });
-                    const keep = sorted[0];
-                    const remove = sorted.slice(1).map(item => item.client);
-                    dups.push({
-                        signature: sig,
-                        keep: keep.client,
-                        keepIndex: keep.index,
-                        remove: remove,
-                        removeIndices: remove.map(r => data.indexOf(r))
-                    });
-                }
-            }
-
-            return dups;
-        }
-
-        function showDuplicateModal() {
-            const modal = document.getElementById('duplicateModal');
-            const summary = document.getElementById('duplicateSummary');
-            const confirmBtn = document.getElementById('confirmDuplicateCleanup');
-
-            // Find duplicates
-            const dups = findDuplicates(clients);
-
-            if (dups.length === 0) {
-                summary.innerHTML = '<div style="color:#2ecc71;padding:20px;text-align:center;">✅ No duplicates found! All clients are unique.</div>';
-                confirmBtn.disabled = true;
-                modal.classList.add('show');
-                return;
-            }
-
-            let html = `<p style="color:var(--text-muted);margin-bottom:10px;">Found <strong>${dups.length}</strong> duplicate group(s). <span class="dup-count-badge">${dups.reduce((acc, d) => acc + d.remove.length, 0)} duplicates will be removed</span></p>`;
-            html += '<div style="max-height:300px;overflow:auto;">';
-
-            dups.forEach((d, i) => {
-                const keepName = d.keep.name || 'Unnamed';
-                const keepDate = d.keep.date || 'no date';
-                html += `<div class="dup-group">
-                    <div style="font-weight:600;color:var(--text-primary);">
-                        Group ${i+1}: <span style="color:var(--accent);">KEEP</span> "${esc(keepName)}" (${keepDate})
-                        <span class="dup-count-badge">${d.remove.length} duplicate(s)</span>
-                    </div>
-                    <div style="font-size:calc(var(--font-size-base)*0.8);color:var(--text-muted);padding-left:12px;">`;
-                d.remove.forEach(r => {
-                    html += `• ${esc(r.name || 'Unnamed')} (${r.date || 'no date'})<br>`;
-                });
-                html += `</div></div>`;
-            });
-
-            html += '</div>';
-            summary.innerHTML = html;
-
-            confirmBtn.disabled = false;
-            confirmBtn.onclick = function() {
-                if (!confirm(
-                        `This will remove ${dups.reduce((acc, d) => acc + d.remove.length, 0)} duplicate client(s). A backup will be created first. Continue?`
-                        )) return;
-
-                // Create backup before cleanup
-                const backupData = JSON.parse(JSON.stringify(clients));
-                localStorage.setItem(`DUDE_BACKUP_BEFORE_CLEANUP_${Date.now()}`, JSON.stringify(backupData));
-                showToast('📦 Temporary backup created before cleanup.', 'info', 'Backup Saved');
-
-                // Remove duplicates
-                const toRemove = new Set();
-                dups.forEach(d => {
-                    d.removeIndices.forEach(idx => toRemove.add(idx));
-                });
-
-                const sortedIndices = Array.from(toRemove).sort((a, b) => b - a);
-                for (const idx of sortedIndices) {
-                    clients.splice(idx, 1);
-                }
-
-                // Save cleaned data
-                persist();
-                render();
-                showToast(`🧹 Removed ${toRemove.size} duplicate client(s). Data saved locally.`, 'success', 'Cleanup Complete');
-
-                // Sync to Drive
-                if (isConnected && accessToken) {
-                    driveBackup(false);
-                } else {
-                    enqueueSyncOperation({ type: 'update', data: { id: 'cleanup', _updatedAt: Date.now() } });
-                    showToast('📡 Cleanup queued for sync when online.', 'info', 'Queued');
-                }
-
-                document.getElementById('duplicateModal').classList.remove('show');
-            };
-
-            modal.classList.add('show');
         }
 
         // ============================================================
@@ -1866,14 +1563,6 @@
         const CURRENT_USER_KEY = 'DUDE_CURRENT_USER';
         const USERS_LIST_KEY = 'DUDE_USERS_LIST';
         const DRIVE_CLIENT_ID_KEY = 'GOOGLE_DRIVE_CLIENT_ID';
-
-        // Default auto sync/restore to ON
-        if (localStorage.getItem('DRIVE_AUTO_SYNC') === null) {
-            localStorage.setItem('DRIVE_AUTO_SYNC', 'true');
-        }
-        if (localStorage.getItem('DRIVE_AUTO_RESTORE') === null) {
-            localStorage.setItem('DRIVE_AUTO_RESTORE', 'true');
-        }
 
         let users = JSON.parse(localStorage.getItem(USERS_LIST_KEY) || '["owner","reseller"]');
 
@@ -2360,12 +2049,6 @@
             document.getElementById('morePending').textContent = pending;
             document.getElementById('moreTopPanel').textContent = topPanel + (topCount > 0 ? ' (' + topCount + ')' : '');
             document.getElementById('moreNextExpiry').textContent = nextExpiry;
-            // Update online status
-            const statusEl = document.getElementById('moreStatus');
-            if (statusEl) {
-                statusEl.textContent = isOnline ? '🟢 Online' : '🔴 Offline (local only)';
-                statusEl.style.color = isOnline ? '#2ecc71' : '#f39c12';
-            }
         }
 
         // ============================================================
@@ -2445,7 +2128,7 @@
         }
 
         // ============================================================
-        // CLIENT CRUD — all operations persist locally and enqueue sync
+        // CLIENT CRUD
         // ============================================================
         function resetForm() {
             $('clientForm').reset();
@@ -2570,46 +2253,24 @@
                 due: Number($('due').value) || 0,
                 loanMode: $('loanMode').value,
                 kistis: getKistisFromUI(),
-                note: $('note').value.trim(),
-                _updatedAt: Date.now()
+                note: $('note').value.trim()
             };
-            let isNew = true;
             let i = clients.findIndex(a => a.id === id);
-            if (i >= 0) {
-                clients[i] = x;
-                isNew = false;
-            } else {
-                clients.push(x);
-            }
+            if (i >= 0) clients[i] = x;
+            else clients.push(x);
             persist();
             closeClient();
             render();
-            showToast(`Client "${x.name}" ${isNew ? 'added' : 'updated'} successfully!`, 'success', isNew ? 'Added' :
-            'Updated');
-
-            // Enqueue for sync if offline, otherwise trigger backup
-            if (!isOnline) {
-                enqueueSyncOperation({ type: isNew ? 'add' : 'update', data: x });
-                showToast('📡 Change queued for sync when online.', 'info', 'Queued');
-            } else if (isConnected && accessToken) {
-                // Backup will be triggered by persist() → triggerDriveBackup()
-            }
+            showToast(`Client "${x.name}" saved successfully!`, 'success', 'Saved');
         }
 
         function deleteClient(id) {
             let x = clients.find(a => a.id === id);
             if (x && confirm('Delete ' + x.name + '?')) {
-                const deleted = { ...x };
                 clients = clients.filter(a => a.id !== id);
                 persist();
                 render();
                 showToast(`Client "${x.name}" deleted.`, 'info', 'Deleted');
-                if (!isOnline) {
-                    enqueueSyncOperation({ type: 'delete', id: id });
-                    showToast('📡 Delete queued for sync when online.', 'info', 'Queued');
-                } else if (isConnected && accessToken) {
-                    triggerDriveBackup();
-                }
             }
         }
 
@@ -2900,12 +2561,18 @@
         }
 
         // ============================================================
-        // DRIVE AUTO SYNC (debounced 1s) — PERSISTENT, ON by default
+        // DRIVE AUTO SYNC (1 second backup) — PERSISTENT with default ON
         // ============================================================
+        let driveAutoSyncInterval = null;
         let driveAutoSyncEnabled = false;
-        let backupDebounceTimer = null;
 
         function startDriveAutoSync() {
+            // Auto Sync is event-driven: triggerDriveBackup() schedules one backup
+            // 1 second after the latest data change. This avoids endless Drive API writes.
+            if (driveAutoSyncInterval) {
+                clearTimeout(driveAutoSyncInterval);
+                driveAutoSyncInterval = null;
+            }
             driveAutoSyncEnabled = true;
             localStorage.setItem('DRIVE_AUTO_SYNC', 'true');
             const statusEl = document.getElementById('driveAutoSyncStatus');
@@ -2915,6 +2582,10 @@
         }
 
         function stopDriveAutoSync(persistState = true, silent = false) {
+            if (driveAutoSyncInterval) {
+                clearTimeout(driveAutoSyncInterval);
+                driveAutoSyncInterval = null;
+            }
             driveAutoSyncEnabled = false;
             if (persistState) localStorage.setItem('DRIVE_AUTO_SYNC', 'false');
             const statusEl = document.getElementById('driveAutoSyncStatus');
@@ -2925,6 +2596,7 @@
         }
 
         function loadDriveAutoSyncState() {
+            // ON by default. Only a deliberate user toggle-off should disable it.
             const stored = localStorage.getItem('DRIVE_AUTO_SYNC');
             const enabled = stored === null ? true : stored === 'true';
             if (stored === null) localStorage.setItem('DRIVE_AUTO_SYNC', 'true');
@@ -2934,24 +2606,16 @@
             const statusEl = document.getElementById('driveAutoSyncStatus');
             if (statusEl) statusEl.textContent = enabled ? 'On (1s)' : 'Off';
 
-            driveAutoSyncEnabled = enabled;
-        }
-
-        function triggerDriveBackup() {
-            if (!driveAutoSyncEnabled || !isConnected || !accessToken) return;
-            clearTimeout(backupDebounceTimer);
-            backupDebounceTimer = setTimeout(async () => {
-                backupDebounceTimer = null;
-                try {
-                    await driveBackup(true);
-                } catch (e) {
-                    console.warn('Scheduled Drive backup failed:', e);
-                }
-            }, 1000);
+            if (enabled) {
+                driveAutoSyncEnabled = true;
+                if (isConnected && accessToken) startDriveAutoSync();
+            } else {
+                driveAutoSyncEnabled = false;
+            }
         }
 
         // ============================================================
-        // DRIVE AUTO RESTORE (every 10s) — PERSISTENT, ON by default
+        // DRIVE AUTO RESTORE (every 10 seconds) — PERSISTENT with default ON
         // ============================================================
         let driveAutoRestoreInterval = null;
         let driveAutoRestoreEnabled = false;
@@ -2989,6 +2653,7 @@
         }
 
         function loadDriveAutoRestoreState() {
+            // ON by default. Only a deliberate user toggle-off should disable it.
             const stored = localStorage.getItem('DRIVE_AUTO_RESTORE');
             const enabled = stored === null ? true : stored === 'true';
             if (stored === null) localStorage.setItem('DRIVE_AUTO_RESTORE', 'true');
@@ -2998,97 +2663,17 @@
             const statusEl = document.getElementById('driveAutoRestoreStatus');
             if (statusEl) statusEl.textContent = enabled ? 'On (10s)' : 'Off';
 
-            driveAutoRestoreEnabled = enabled;
-            if (enabled && isConnected && accessToken) {
-                startDriveAutoRestore();
+            if (enabled) {
+                driveAutoRestoreEnabled = true;
+                if (isConnected && accessToken) startDriveAutoRestore();
+            } else {
+                driveAutoRestoreEnabled = false;
             }
         }
 
-        // ============================================================
-        // TWO-WAY MERGE: merge remote data into local, preserving newer
-        // ============================================================
-        function mergeClients(localData, remoteData) {
-            const merged = [];
-            const seen = new Set();
-
-            // First, build a map of local clients by signature
-            const localMap = {};
-            localData.forEach(c => {
-                const sig = getClientSignature(c);
-                if (!localMap[sig]) localMap[sig] = [];
-                localMap[sig].push(c);
-            });
-
-            // Process remote clients
-            remoteData.forEach(remote => {
-                const sig = getClientSignature(remote);
-                const localMatches = localMap[sig] || [];
-
-                if (localMatches.length === 0) {
-                    // New client from remote
-                    merged.push(remote);
-                    seen.add(sig);
-                    return;
-                }
-
-                // Find the best matching local client
-                let bestLocal = null;
-                let bestScore = -1;
-                for (const local of localMatches) {
-                    let score = 0;
-                    if (local.id === remote.id) score += 10;
-                    if (local.sid && remote.sid && local.sid === remote.sid) score += 5;
-                    if (local.phone && remote.phone && local.phone === remote.phone) score += 4;
-                    if (local.key && remote.key && local.key === remote.key) score += 3;
-                    if (score > bestScore) { bestScore = score;
-                        bestLocal = local; }
-                }
-
-                if (bestLocal) {
-                    // Merge: keep newer fields
-                    const localTime = bestLocal._updatedAt || new Date(bestLocal.date || 0).getTime();
-                    const remoteTime = remote._updatedAt || new Date(remote.date || 0).getTime();
-
-                    if (remoteTime > localTime) {
-                        // Remote is newer — merge remote into local
-                        merged.push({ ...bestLocal, ...remote, _updatedAt: remoteTime });
-                    } else {
-                        // Local is newer or same
-                        merged.push(bestLocal);
-                    }
-                    seen.add(sig);
-                } else {
-                    merged.push(remote);
-                    seen.add(sig);
-                }
-            });
-
-            // Add any local clients that weren't matched
-            localData.forEach(c => {
-                const sig = getClientSignature(c);
-                if (!seen.has(sig)) {
-                    merged.push(c);
-                    seen.add(sig);
-                }
-            });
-
-            return merged;
-        }
-
-        function getClientSignature(c) {
-            if (c.sid && c.sid.trim()) return 'sid:' + c.sid.trim().toLowerCase();
-            if (c.phone && c.phone.trim()) return 'phone:' + c.phone.trim().toLowerCase();
-            const name = (c.name || '').trim().toLowerCase();
-            const key = (c.key || '').trim().toLowerCase();
-            const panels = (c.panelTypes || []).sort().join('|').toLowerCase();
-            return 'namekey:' + name + '|' + key + '|' + panels;
-        }
-
-        // ============================================================
-        // AUTO RESTORE CHECK — with two-way merge, no duplicates
-        // ============================================================
         async function checkAndAutoRestore() {
             if (!isConnected || !accessToken || !driveAutoRestoreEnabled) return;
+            // Skip if a backup is pending (debounce timer active)
             if (backupDebounceTimer) return;
             try {
                 const fileName = `backup-${currentUser}.json`;
@@ -3100,16 +2685,33 @@
                 if (files.length === 0) return;
                 const driveModTime = files[0].modifiedTime ? new Date(files[0].modifiedTime).getTime() : 0;
                 const lastBackupTime = parseInt(localStorage.getItem('drive_last_backup_time_ms') || '0');
-                // If Drive file is newer, fetch and merge
-                if (driveModTime > lastBackupTime + 3000) {
-                    showToast('📥 Newer backup found on Drive, merging...', 'warning', 'Auto Restore');
+                if (driveModTime > lastBackupTime + 5000) {
+                    showToast('Newer backup found on Drive, auto-restoring...', 'warning', 'Auto Restore');
                     await driveRestore(true);
                     localStorage.setItem('drive_last_backup_time_ms', String(driveModTime));
-                    showToast('✅ Auto merge completed successfully!', 'success', 'Auto Restore');
+                    showToast('Auto restore completed successfully!', 'success', 'Auto Restore');
                 }
             } catch (e) {
                 console.warn('Auto restore check error:', e);
             }
+        }
+
+        // ============================================================
+        // DRIVE BACKUP DEBOUNCE (triggered on data change)
+        // ============================================================
+        let backupDebounceTimer = null;
+
+        function triggerDriveBackup() {
+            if (!driveAutoSyncEnabled || !isConnected || !accessToken) return;
+            clearTimeout(backupDebounceTimer);
+            backupDebounceTimer = setTimeout(async () => {
+                backupDebounceTimer = null;
+                try {
+                    await driveBackup(true);
+                } catch (e) {
+                    console.warn('Scheduled Drive backup failed:', e);
+                }
+            }, 1000);
         }
 
         // ============================================================
@@ -3228,11 +2830,16 @@
             const animEnabled = localStorage.getItem('DUDE_I_AM_GAMER_ANIMATIONS') !== 'false';
             document.getElementById('animationsToggle').checked = animEnabled;
             document.getElementById('animStatus').textContent = animEnabled ? 'ON' : 'OFF';
-            // Load auto sync/restore states
-            const autoSync = localStorage.getItem('DRIVE_AUTO_SYNC') !== 'false';
+            // Load auto sync/restore states — these are already loaded globally, but we sync UI
+            const autoSyncStored = localStorage.getItem('DRIVE_AUTO_SYNC');
+            const autoSync = autoSyncStored === null ? true : autoSyncStored === 'true';
+            if (autoSyncStored === null) localStorage.setItem('DRIVE_AUTO_SYNC', 'true');
             document.getElementById('driveAutoSyncToggle').checked = autoSync;
             document.getElementById('driveAutoSyncStatus').textContent = autoSync ? 'On (1s)' : 'Off';
-            const autoRestore = localStorage.getItem('DRIVE_AUTO_RESTORE') !== 'false';
+
+            const autoRestoreStored = localStorage.getItem('DRIVE_AUTO_RESTORE');
+            const autoRestore = autoRestoreStored === null ? true : autoRestoreStored === 'true';
+            if (autoRestoreStored === null) localStorage.setItem('DRIVE_AUTO_RESTORE', 'true');
             document.getElementById('driveAutoRestoreToggle').checked = autoRestore;
             document.getElementById('driveAutoRestoreStatus').textContent = autoRestore ? 'On (10s)' : 'Off';
             $('settingsModal').classList.add('show');
@@ -3256,6 +2863,7 @@
             const input = document.getElementById('googleClientIdInput');
             const isBlurred = input.classList.contains('blurred');
             localStorage.setItem('DUDE_CLIENT_ID_BLURRED', String(isBlurred));
+            // If client ID changed, we need to reinitialize the token client
             const theme = document.querySelector('.theme-option.active-theme')?.dataset.theme || 'dark';
             applyTheme(theme);
             const autoBackup = document.getElementById('autoBackupToggle').checked;
@@ -3263,10 +2871,11 @@
             updateAutoBackupStatus();
             if (autoBackup) startAutoBackup();
             else stopAutoBackup();
+            // Save animation state
             const animEnabled = document.getElementById('animationsToggle').checked;
             toggleAnimations(animEnabled);
+            // Save invoice settings
             saveInvoiceSettings();
-
             // Save auto sync/restore states
             const autoSync = document.getElementById('driveAutoSyncToggle').checked;
             if (autoSync) startDriveAutoSync();
@@ -3274,7 +2883,6 @@
             const autoRestore = document.getElementById('driveAutoRestoreToggle').checked;
             if (autoRestore) startDriveAutoRestore();
             else stopDriveAutoRestore();
-
             loadSiteName();
             closeSettings();
             render();
@@ -3487,7 +3095,6 @@
                         if (obj.finalPrice === undefined) obj.finalPrice = (obj.price || 0) - (obj.discount || 0);
                         if (obj.due === undefined) obj.due = (obj.finalPrice || 0) - (obj.paid || 0);
                         if (obj.feeDue === undefined) obj.feeDue = (obj.monthlyFee || 0) - (obj.feePaid || 0);
-                        if (!obj._updatedAt) obj._updatedAt = Date.now();
                         return obj;
                     });
 
@@ -3495,6 +3102,12 @@
                     if (valid.length === 0) {
                         showToast('No valid client records found (all missing names).', 'warning', 'Import Failed');
                         return;
+                    }
+
+                    if (valid.length < imported.length) {
+                        if (!confirm(
+                                `${imported.length - valid.length} record(s) were skipped due to missing names. Continue with ${valid.length} client(s)?`
+                                )) return;
                     }
 
                     clients = valid;
@@ -3566,7 +3179,7 @@
         }
 
         // ============================================================
-        // GOOGLE DRIVE REAL OAUTH — with silent token refresh
+        // GOOGLE DRIVE REAL OAUTH - FIXED with dynamic client ID
         // ============================================================
 
         const SCOPES = 'https://www.googleapis.com/auth/drive.file';
@@ -3576,8 +3189,6 @@
         let gisInited = false;
         let accessToken = null;
         let isConnected = false;
-        let isRefreshing = false;
-        let refreshAttempts = 0;
 
         function getClientId() {
             return localStorage.getItem(DRIVE_CLIENT_ID_KEY) || '';
@@ -3603,6 +3214,7 @@
 
         function updateDriveUI(connected, message) {
             const els = getDriveElements();
+            const status = connected ? 'connected' : 'disconnected';
             const dotClass = connected ? 'connected' : 'disconnected';
             const text = message || (connected ? '✅ Connected to Google Drive' : 'Not connected');
 
@@ -3626,32 +3238,30 @@
             if (els.restoreBtn) els.restoreBtn.disabled = !connected;
 
             isConnected = connected;
+            localStorage.setItem('drive_connected', connected ? 'true' : 'false');
             if (connected && accessToken) {
-                localStorage.setItem('drive_connected', 'true');
                 localStorage.setItem('drive_token', accessToken);
-                // Start auto features if they're enabled
-                loadDriveAutoSyncState();
-                loadDriveAutoRestoreState();
-                setTimeout(() => checkAndAutoRestore(), 1000);
-            } else if (!connected) {
-                localStorage.removeItem('drive_connected');
-                if (!isRefreshing) {
-                    stopDriveAutoSync(false, true);
-                    stopDriveAutoRestore(false, true);
-                }
+                // If drive connects, re-check auto states to ensure intervals are running
+                setTimeout(() => {
+                    loadDriveAutoSyncState();
+                    loadDriveAutoRestoreState();
+                    // Also perform a restore check on connect
+                    setTimeout(() => {
+                        checkAndAutoRestore();
+                    }, 2000);
+                }, 500);
             }
         }
 
-        function setDriveError(msg, isWarning = false) {
+        function setDriveError(msg) {
             const els = getDriveElements();
             if (els.error) {
                 els.error.textContent = '⚠️ ' + msg;
                 els.error.style.display = 'block';
-                els.error.style.color = isWarning ? '#fbbc04' : '#ff7089';
                 els.error.innerHTML += ' <br><small><a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="color:#4dabf7;">Open Google Cloud Console → Credentials</a></small>';
                 setTimeout(() => { if (els.error) els.error.style.display = 'none'; }, 15000);
             }
-            if (!isWarning) showToast(msg, 'error', 'Drive Error');
+            showToast(msg, 'error', 'Drive Error');
         }
 
         // ===== GAPI & GIS functions =====
@@ -3684,12 +3294,18 @@
                     gisInited = true;
                     console.log('GIS loaded and token client initialized.');
                     showOriginInfo();
-                    // Try silent re-auth
+
+                    // Best-effort silent reconnect. If this browser already has an
+                    // authorized Google session, no manual Connect click is needed.
                     setTimeout(() => {
                         if (!isConnected && tokenClient) {
-                            trySilentReauth();
+                            try {
+                                tokenClient.requestAccessToken({ prompt: 'none' });
+                            } catch (e) {
+                                console.warn('Silent Drive reconnect unavailable:', e);
+                            }
                         }
-                    }, 500);
+                    }, 700);
                     const els = getDriveElements();
                     if (els.text && !isConnected) {
                         els.text.textContent = 'Client ID set. Click Connect to authenticate.';
@@ -3716,17 +3332,6 @@
             }
         }
 
-        function trySilentReauth() {
-            if (!tokenClient || isConnected || isRefreshing) return;
-            isRefreshing = true;
-            try {
-                tokenClient.requestAccessToken({ prompt: 'none' });
-            } catch (e) {
-                isRefreshing = false;
-                console.warn('Silent reauth failed:', e);
-            }
-        }
-
         async function initializeGapiClient() {
             try {
                 await gapi.client.init({
@@ -3743,11 +3348,9 @@
                     try {
                         await gapi.client.drive.about.get({ fields: 'user' });
                     } catch (e) {
-                        // Token expired, try silent reauth
                         localStorage.removeItem('drive_token');
                         accessToken = null;
-                        updateDriveUI(false, 'Session expired. Reconnecting...');
-                        trySilentReauth();
+                        updateDriveUI(false, 'Session expired. Reconnect.');
                     }
                 }
                 const driveConnected = localStorage.getItem('drive_connected') === 'true';
@@ -3756,8 +3359,6 @@
                     if (saved) {
                         accessToken = saved;
                         updateDriveUI(true, '✅ Connected to Google Drive');
-                    } else {
-                        trySilentReauth();
                     }
                 }
                 showOriginInfo();
@@ -3767,30 +3368,18 @@
         }
 
         function tokenCallback(resp) {
-            isRefreshing = false;
             if (resp.error !== undefined) {
                 console.error('OAuth error:', resp);
                 if (resp.error === 'access_denied') {
-                    setDriveError('Access denied. Please grant permission.', true);
+                    setDriveError('Access denied. Please grant permission.');
                 } else if (resp.error === 'unauthorized_client') {
-                    setDriveError('Client ID not authorized. Check "Authorized JavaScript origins" in Cloud Console.',
-                        true);
+                    setDriveError('Client ID not authorized. Check "Authorized JavaScript origins" in Cloud Console.');
                 } else if (resp.error === 'redirect_uri_mismatch') {
-                    setDriveError('Redirect URI mismatch. Add your current URL to "Authorized redirect URIs" in Cloud Console.',
-                        true);
-                } else if (resp.error === 'interaction_required') {
-                    // Silent auth failed, user needs to interact
-                    setDriveError('Please click Connect to authenticate.', true);
-                    updateDriveUI(false, 'Click Connect to authenticate');
+                    setDriveError('Redirect URI mismatch. Add your current URL to "Authorized redirect URIs" in Cloud Console.');
                 } else {
-                    setDriveError('Authentication failed: ' + resp.error, true);
+                    setDriveError('Authentication failed: ' + resp.error);
                 }
-                if (accessToken) {
-                    // Don't disconnect if we already had a token — just warn
-                    showToast('⚠️ Session may be expired. Try reconnecting.', 'warning', 'Auth Warning');
-                } else {
-                    updateDriveUI(false, '❌ Auth error');
-                }
+                updateDriveUI(false, '❌ Auth error');
                 return;
             }
             accessToken = resp.access_token;
@@ -3798,22 +3387,19 @@
             localStorage.setItem('drive_token', accessToken);
             updateDriveUI(true, '✅ Connected to Google Drive');
             checkLastBackup();
+            loadDriveAutoSyncState();
+            loadDriveAutoRestoreState();
+            setTimeout(() => checkAndAutoRestore(), 1000);
             const els = getDriveElements();
             if (els.error) els.error.style.display = 'none';
             showToast('Connected to Google Drive successfully!', 'success', 'Drive Connected');
-            // Re-check auto states
-            setTimeout(() => {
-                loadDriveAutoSyncState();
-                loadDriveAutoRestoreState();
-                checkAndAutoRestore();
-            }, 500);
         }
 
         // ===== Connect / Disconnect =====
         function connectToDrive() {
             const clientId = getClientId();
             if (!clientId) {
-                setDriveError('Google Drive Client ID not set. Please set it in Settings → Google Drive.', true);
+                setDriveError('Google Drive Client ID not set. Please set it in Settings → Google Drive.');
                 const input = document.getElementById('googleClientIdInput');
                 if (input) {
                     input.style.borderColor = '#ff6b6b';
@@ -3841,12 +3427,12 @@
                         gisInited = true;
                         console.log('Token client initialized on demand.');
                     } else {
-                        setDriveError('Google Identity Services not loaded. Please refresh the page.', true);
+                        setDriveError('Google Identity Services not loaded. Please refresh the page.');
                         return;
                     }
                 } catch (e) {
                     console.error('Token client init error:', e);
-                    setDriveError('Failed to initialize OAuth. Check your Client ID.', true);
+                    setDriveError('Failed to initialize OAuth. Check your Client ID.');
                     return;
                 }
             }
@@ -3861,7 +3447,7 @@
                 tokenClient.requestAccessToken({ prompt: 'consent' });
             } catch (e) {
                 console.error('Token request error:', e);
-                setDriveError('Failed to open authentication popup. Please allow popups.', true);
+                setDriveError('Failed to open authentication popup. Please allow popups.');
                 updateDriveUI(false, 'Connection failed');
             }
         }
@@ -3880,17 +3466,15 @@
             const els = getDriveElements();
             if (els.lastBackup) els.lastBackup.textContent = '';
             showToast('Disconnected from Google Drive.', 'info', 'Drive Disconnected');
+            // Stop auto sync/restore if disconnected
             stopDriveAutoSync(false, true);
             stopDriveAutoRestore(false, true);
-            // Clean up any pending backups
-            clearTimeout(backupDebounceTimer);
-            backupDebounceTimer = null;
         }
 
         // ===== Backup to Drive (single file, overwrites) =====
         async function driveBackup(silent = false) {
             if (!isConnected || !accessToken) {
-                if (!silent) setDriveError('Not connected to Google Drive. Please connect first.', true);
+                if (!silent) setDriveError('Not connected to Google Drive. Please connect first.');
                 return;
             }
             const els = getDriveElements();
@@ -3900,10 +3484,13 @@
                     els.backupBtn.textContent = '⏳ Uploading...';
                 }
 
+                // Data has already been persisted by persist() before this backup was scheduled.
+                // Do not call persist() here, otherwise auto-backup recursively schedules itself.
                 const data = JSON.stringify(clients, null, 2);
                 const blob = new Blob([data], { type: 'application/json' });
                 const fileName = `backup-${currentUser}.json`;
 
+                // Search for existing backup file for this user
                 const searchResponse = await gapi.client.drive.files.list({
                     q: `name = '${fileName}' and trashed = false`,
                     fields: 'files(id, name)',
@@ -3912,6 +3499,7 @@
                 let fileId = null;
 
                 if (existingFiles.length > 0) {
+                    // Overwrite existing file
                     fileId = existingFiles[0].id;
                     const metadata = { name: fileName };
                     const form = new FormData();
@@ -3928,6 +3516,7 @@
                         throw new Error(err.error?.message || 'Upload failed (HTTP ' + response.status + ')');
                     }
                 } else {
+                    // Create new file
                     const metadata = { name: fileName, parents: ['root'] };
                     const form = new FormData();
                     form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
@@ -3967,7 +3556,7 @@
             } catch (e) {
                 console.error('Backup error:', e);
                 if (!silent) {
-                    setDriveError('Backup failed: ' + e.message, true);
+                    setDriveError('Backup failed: ' + e.message);
                     if (els.backupBtn) {
                         els.backupBtn.textContent = '⬆ Backup to Drive';
                         els.backupBtn.disabled = false;
@@ -3976,10 +3565,10 @@
             }
         }
 
-        // ===== Restore from Drive with two-way merge =====
+        // ===== Restore from Drive (single file) =====
         async function driveRestore(silent = false) {
             if (!isConnected || !accessToken) {
-                if (!silent) setDriveError('Not connected to Google Drive. Please connect first.', true);
+                if (!silent) setDriveError('Not connected to Google Drive. Please connect first.');
                 return;
             }
             const els = getDriveElements();
@@ -3998,7 +3587,7 @@
 
                 if (files.length === 0) {
                     if (!silent) {
-                        setDriveError('No backup file found for this user: ' + fileName, true);
+                        setDriveError('No backup file found for this user: ' + fileName);
                         if (els.restoreBtn) {
                             els.restoreBtn.textContent = '⬇ Restore from Drive';
                             els.restoreBtn.disabled = false;
@@ -4012,9 +3601,7 @@
                 const modTime = file.modifiedTime ? new Date(file.modifiedTime).toLocaleString() : 'unknown';
 
                 if (!silent) {
-                    if (!confirm(
-                            `Merge from "${fileName}" (modified: ${modTime})?\n\nThis will merge remote data with your local data, keeping the newest version of each client.`
-                            )) {
+                    if (!confirm(`Restore from "${fileName}" (modified: ${modTime})?\n\nThis will REPLACE all ${clients.length} existing clients.`)) {
                         if (els.restoreBtn) {
                             els.restoreBtn.textContent = '⬇ Restore from Drive';
                             els.restoreBtn.disabled = false;
@@ -4036,14 +3623,26 @@
                 }
 
                 const text = await downloadResponse.text();
-                const remoteData = JSON.parse(text);
+                const data = JSON.parse(text);
 
-                if (!Array.isArray(remoteData)) {
+                if (!Array.isArray(data)) {
                     throw new Error('Invalid backup format: not an array of clients.');
                 }
 
-                // Normalize remote data
-                const normalized = remoteData.map(c => {
+                if (data.length === 0) {
+                    if (!silent) {
+                        if (!confirm('The backup file contains 0 clients. Continue?')) {
+                            if (els.restoreBtn) {
+                                els.restoreBtn.textContent = '⬇ Restore from Drive';
+                                els.restoreBtn.disabled = false;
+                            }
+                            return;
+                        }
+                    }
+                }
+
+                // Normalize data (fixed aliases shadowing)
+                const normalized = data.map(c => {
                     const mapField = (key) => {
                         const aliasMap = {
                             'name': ['name', 'Name', 'NAME', 'User', 'USER', 'user'],
@@ -4116,13 +3715,12 @@
                     if (obj.finalPrice === undefined) obj.finalPrice = (obj.price || 0) - (obj.discount || 0);
                     if (obj.due === undefined) obj.due = (obj.finalPrice || 0) - (obj.paid || 0);
                     if (obj.feeDue === undefined) obj.feeDue = (obj.monthlyFee || 0) - (obj.feePaid || 0);
-                    if (!obj._updatedAt) obj._updatedAt = new Date(obj.date || 0).getTime();
                     return obj;
                 });
 
                 const valid = normalized.filter(c => c.name && c.name.trim().length > 0);
                 if (valid.length === 0) {
-                    if (!silent) setDriveError('No valid client records found in the backup.', true);
+                    if (!silent) setDriveError('No valid client records found in the backup.');
                     if (els.restoreBtn && !silent) {
                         els.restoreBtn.textContent = '⬇ Restore from Drive';
                         els.restoreBtn.disabled = false;
@@ -4130,23 +3728,12 @@
                     return;
                 }
 
-                // MERGE: local clients (clients) + remote (valid)
-                const merged = mergeClients(clients, valid);
-
-                // Count changes
-                const added = merged.length - clients.length;
-                const updated = merged.filter((c, i) => {
-                    const orig = clients.find(o => o.id === c.id);
-                    return orig && JSON.stringify(orig) !== JSON.stringify(c);
-                }).length;
-
-                clients = merged;
+                clients = valid;
                 persist();
                 render();
-
                 if (!silent) {
-                    const msg = `✅ Merged ${added} new clients, updated ${updated} existing clients. Total: ${clients.length}`;
-                    showToast(msg, 'success', 'Merge Complete');
+                    showToast(`✅ Successfully restored ${clients.length} clients from "${fileName}".`, 'success',
+                        'Restore Complete');
                 }
 
                 if (els.restoreBtn && !silent) {
@@ -4157,7 +3744,7 @@
             } catch (e) {
                 console.error('Restore error:', e);
                 if (!silent) {
-                    setDriveError('Restore failed: ' + e.message, true);
+                    setDriveError('Restore failed: ' + e.message);
                     if (els.restoreBtn) {
                         els.restoreBtn.textContent = '⬇ Restore from Drive';
                         els.restoreBtn.disabled = false;
@@ -4191,20 +3778,6 @@
         // ============================================================
         // INIT
         // ============================================================
-        // Network status listeners
-        window.addEventListener('online', () => {
-            updateOnlineStatus();
-            if (isOnline) processSyncQueue();
-        });
-        window.addEventListener('offline', updateOnlineStatus);
-
-        // Listen for page visibility to avoid unnecessary syncs
-        document.addEventListener('visibilitychange', () => {
-            if (!document.hidden && isOnline) {
-                processSyncQueue();
-            }
-        });
-
         document.querySelectorAll('.nav button[data-page]').forEach(b => b.addEventListener('click', () => switchPage(b
             .dataset.page, b)));
         document.getElementById('addBtn').onclick = openAdd;
@@ -4216,16 +3789,6 @@
         document.getElementById('cancelSettings').onclick = closeSettings;
         document.getElementById('saveSettings').onclick = saveSettings;
         document.getElementById('currencySelect').addEventListener('change', saveCurrency);
-
-        // Duplicate removal buttons
-        document.getElementById('removeDuplicatesBtn').addEventListener('click', showDuplicateModal);
-        document.getElementById('removeDuplicatesSettingsBtn').addEventListener('click', showDuplicateModal);
-        document.getElementById('closeDuplicateModal').addEventListener('click', () => {
-            document.getElementById('duplicateModal').classList.remove('show');
-        });
-        document.getElementById('cancelDuplicate').addEventListener('click', () => {
-            document.getElementById('duplicateModal').classList.remove('show');
-        });
 
         // Blur toggle
         document.getElementById('blurToggleBtn').addEventListener('click', toggleBlur);
@@ -4348,6 +3911,7 @@
                     checkAndAutoRestore();
                 }, 300);
             } else {
+                // Keep the preferred auto settings ON even before Drive authentication.
                 loadDriveAutoSyncState();
                 loadDriveAutoRestoreState();
             }
@@ -4394,7 +3958,8 @@
         window.addEventListener('beforeunload', function() {
             if (renderInterval) clearInterval(renderInterval);
             stopAutoBackup();
-            // Don't stop drive auto features on unload — they'll restart on next load
+            stopDriveAutoSync(false, true);
+            stopDriveAutoRestore(false, true);
             persist();
         });
 
@@ -4407,10 +3972,8 @@
         loadCurrency();
         loadAnimationsState();
         loadInvoiceSettings();
-        loadSyncQueue();
-        updateOnlineStatus();
 
-        // Ensure auto sync/restore are ON by default
+        // Drive Auto Sync / Restore are ON by default and remain ON across reloads.
         if (localStorage.getItem('DRIVE_AUTO_SYNC') === null) {
             localStorage.setItem('DRIVE_AUTO_SYNC', 'true');
         }
@@ -4418,20 +3981,17 @@
             localStorage.setItem('DRIVE_AUTO_RESTORE', 'true');
         }
 
+        // Load auto states AFTER everything else, so drive connection state is known
         setTimeout(() => {
             loadDriveAutoSyncState();
             loadDriveAutoRestoreState();
+            // Also trigger a restore check on page load
             setTimeout(() => {
                 if (isConnected && accessToken) {
                     checkAndAutoRestore();
                 }
-                // Process any pending sync queue
-                if (isOnline) {
-                    processSyncQueue();
-                }
-            }, 2000);
+            }, 3000);
         }, 300);
-
         document.getElementById('dashboard').classList.remove('hidden');
         document.getElementById('panels').classList.add('hidden');
         document.getElementById('finance').classList.add('hidden');
@@ -4444,9 +4004,11 @@
             if (localStorage.getItem('drive_connected') === 'true') {
                 updateDriveUI(true, '✅ Connected to Google Drive');
                 checkLastBackup();
+                // Re-check auto states after drive connects
                 setTimeout(() => {
                     loadDriveAutoSyncState();
                     loadDriveAutoRestoreState();
+                    // Trigger restore check
                     setTimeout(() => {
                         if (isConnected && accessToken) {
                             checkAndAutoRestore();
@@ -4483,10 +4045,6 @@
                         }
                         if (els.text2 && !isConnected) {
                             els.text2.textContent = 'Client ID set. Click Connect to authenticate.';
-                        }
-                        // Try silent reauth if we have a saved token
-                        if (localStorage.getItem('drive_token')) {
-                            setTimeout(trySilentReauth, 1000);
                         }
                     }
                 } catch (e) {
