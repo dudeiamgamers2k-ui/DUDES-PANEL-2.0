@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>DUDE I AM GAMER — Business Memo</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=Orbitron:wght@400;700;900&family=Quicksand:wght@400;600;700&family=Playfair+Display:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <style>
         /* ============================================================
            THEMES (all 20+ themes — abbreviated for space, same as before)
@@ -1862,6 +1863,48 @@
             .table .chk-col { width: 24px; }
             .table .chk-col input[type="checkbox"] { width: 12px;
                 height: 12px; } }
+
+        /* ===== NEW: REPORT SECTION STYLES ===== */
+        #reportContent { padding: 20px;
+            background: var(--bg-card);
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-color);
+            margin-top: 10px; }
+        #reportContent .report-summary { display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px; }
+        #reportContent .report-summary .stat-item { background: var(--bg-input);
+            padding: 12px;
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-color);
+            text-align: center; }
+        #reportContent .report-summary .stat-item span { display: block;
+            font-size: calc(var(--font-size-base) * 0.7);
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px; }
+        #reportContent .report-summary .stat-item strong { font-size: calc(var(--font-size-base) * 1.4);
+            color: var(--text-primary); }
+        #reportContent .report-table-wrap { overflow-x: auto; }
+        #reportContent .report-table { width: 100%;
+            border-collapse: collapse;
+            font-size: calc(var(--font-size-base) * 0.8); }
+        #reportContent .report-table th,
+        #reportContent .report-table td { padding: 8px 10px;
+            border: 1px solid var(--border-color);
+            text-align: left; }
+        #reportContent .report-table th { background: var(--bg-input);
+            color: var(--text-secondary);
+            font-weight: 700; }
+        @media print { #reportContent { background: white !important;
+                border: none !important; }
+            #reportContent .report-table th { background: #eee !important;
+                color: #000 !important; }
+            #reportContent .report-table td { color: #000 !important; }
+            #reportContent .report-summary .stat-item { background: #f5f5f5 !important;
+                border-color: #ccc !important; }
+            #reportContent .report-summary .stat-item strong { color: #000 !important; } }
     </style>
 </head>
 <body>
@@ -1881,6 +1924,7 @@
                 <button data-page="panels">▤ Panel List</button>
                 <button data-page="finance">৳ Finance</button>
                 <button data-page="trash">🗑 Trash <span class="trash-count" id="trashCountNav">0</span></button>
+                <button data-page="report">📊 Report</button>
                 <button id="nameBtn">⚙ Settings</button>
                 <button id="googleDriveBtn">☁ Google Drive</button>
             </div>
@@ -2017,6 +2061,31 @@
                         </tr></thead>
                         <tbody id="trashRows"></tbody>
                     </table>
+                </div>
+            </section>
+
+            <!-- ===== NEW: REPORT SECTION ===== -->
+            <section id="report" class="hidden">
+                <div class="toolbar no-print">
+                    <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center; width:100%;">
+                        <label style="color:var(--text-muted); font-size:calc(var(--font-size-base)*0.8);">Report Period:</label>
+                        <select id="reportPeriod" style="width:auto; min-width:120px; padding:6px 10px;">
+                            <option value="lifetime">📅 Lifetime</option>
+                            <option value="yearly">📅 Yearly</option>
+                            <option value="monthly">📅 Monthly</option>
+                            <option value="custom">📅 Custom Range</option>
+                        </select>
+                        <div id="customDateRange" style="display:none; gap:8px; align-items:center; flex-wrap:wrap;">
+                            <input type="date" id="reportStartDate" style="width:auto; padding:6px 10px;">
+                            <span style="color:var(--text-muted);">to</span>
+                            <input type="date" id="reportEndDate" style="width:auto; padding:6px 10px;">
+                        </div>
+                        <button class="btn primary" id="generateReportBtn">📊 Generate Report</button>
+                        <button class="btn primary" id="downloadReportBtn" style="display:none;">⬇ Download PDF</button>
+                    </div>
+                </div>
+                <div id="reportContent">
+                    <div class="empty">Select a period and click "Generate Report" to view data.</div>
                 </div>
             </section>
         </main>
@@ -2158,16 +2227,44 @@
                 <div class="field" style="margin-top:12px"><label>Company Phone</label><input id="companyPhone" placeholder="+880 1234 567890"></div>
                 <div class="field" style="margin-top:12px"><label>Company Email</label><input id="companyEmail" placeholder="info@company.com"></div>
 
-                <div class="section" style="margin-top:20px;">🧾 Invoice Customization</div>
+                <!-- ===== NEW: A to Z INVOICE CUSTOMIZATION ===== -->
+                <div class="section" style="margin-top:20px;">🧾 A to Z Invoice Customization</div>
                 <div class="grid">
                     <div class="field"><label>Invoice Title</label><input id="invTitle" maxlength="40" placeholder="INVOICE"></div>
-                    <div class="field"><label>Invoice Number Prefix</label><input id="invPrefix" maxlength="20" placeholder="INV"></div>
+                    <div class="field"><label>Invoice Prefix</label><input id="invPrefix" maxlength="20" placeholder="INV"></div>
+                    <div class="field"><label>Invoice Number Format</label>
+                        <select id="invNumberFormat">
+                            <option value="prefix-date-counter">PREFIX-DATE-COUNTER (INV-20260101-0001)</option>
+                            <option value="prefix-counter">PREFIX-COUNTER (INV-0001)</option>
+                            <option value="date-counter">DATE-COUNTER (20260101-0001)</option>
+                        </select>
+                    </div>
+                    <div class="field"><label>Currency Symbol Position</label>
+                        <select id="invCurrencyPosition">
+                            <option value="prefix">Before Amount (৳100)</option>
+                            <option value="suffix">After Amount (100৳)</option>
+                        </select>
+                    </div>
+                    <div class="field"><label>Invoice Color Theme</label>
+                        <select id="invColorTheme">
+                            <option value="default">Default (Accent Color)</option>
+                            <option value="blue">Blue</option>
+                            <option value="gold">Gold</option>
+                            <option value="green">Green</option>
+                            <option value="red">Red</option>
+                            <option value="purple">Purple</option>
+                            <option value="monochrome">Monochrome</option>
+                        </select>
+                    </div>
+                    <div class="field"><label>Tax / VAT Rate (%)</label><input id="invTaxRate" type="number" min="0" max="100" step="0.1" value="0" placeholder="0"></div>
                     <div class="field full"><label>Invoice Header Message</label><input id="invHeader" placeholder="e.g. Thank you for your business"></div>
                     <div class="field full"><label>Invoice Footer Message</label><input id="invFooter" placeholder="e.g. Payment due within 7 days"></div>
+                    <div class="field full"><label>Custom Invoice Notes</label><textarea id="invNotes" rows="2" placeholder="Additional notes on invoice..."></textarea></div>
                     <div class="field"><label>Show QR Code</label><select id="invShowQR"><option value="1">Yes</option><option value="0">No</option></select></div>
                     <div class="field"><label>Show Seal</label><select id="invShowSeal"><option value="1">Yes</option><option value="0">No</option></select></div>
                     <div class="field"><label>Show Company Details</label><select id="invShowCompany"><option value="1">Yes</option><option value="0">No</option></select></div>
                     <div class="field"><label>Show Payment Breakdown</label><select id="invShowPayment"><option value="1">Yes</option><option value="0">No</option></select></div>
+                    <div class="field"><label>Show Tax</label><select id="invShowTax"><option value="1">Yes</option><option value="0">No</option></select></div>
                 </div>
                 <div class="inv-preview-box">
                     <div style="font-weight:600;color:var(--text-primary);margin-bottom:6px;">📄 Invoice Preview</div>
@@ -2175,6 +2272,7 @@
                     <div class="inv-preview-line"><span class="inv-preview-label">Prefix</span><span class="inv-preview-value" id="invPreviewPrefix">INV-20260101-0001</span></div>
                     <div class="inv-preview-line"><span class="inv-preview-label">Header</span><span class="inv-preview-value" id="invPreviewHeader">Thank you for your business</span></div>
                     <div class="inv-preview-line"><span class="inv-preview-label">Footer</span><span class="inv-preview-value" id="invPreviewFooter">Payment due within 7 days</span></div>
+                    <div class="inv-preview-line"><span class="inv-preview-label">Tax Rate</span><span class="inv-preview-value" id="invPreviewTax">0%</span></div>
                     <div class="inv-preview-line"><span class="inv-preview-label">QR Code</span><span class="inv-preview-value" id="invPreviewQR">✅ Yes</span></div>
                     <div class="inv-preview-line"><span class="inv-preview-label">Seal</span><span class="inv-preview-value" id="invPreviewSeal">✅ Yes</span></div>
                 </div>
@@ -2837,7 +2935,7 @@
         });
 
         // ============================================================
-        // INVOICE CUSTOMIZATION
+        // INVOICE CUSTOMIZATION (A to Z)
         // ============================================================
         function getInvoiceSettings() {
             return {
@@ -2849,6 +2947,12 @@
                 showSeal: localStorage.getItem('DUDE_INV_SHOW_SEAL') !== '0',
                 showCompany: localStorage.getItem('DUDE_INV_SHOW_COMPANY') !== '0',
                 showPayment: localStorage.getItem('DUDE_INV_SHOW_PAYMENT') !== '0',
+                showTax: localStorage.getItem('DUDE_INV_SHOW_TAX') !== '0',
+                taxRate: parseFloat(localStorage.getItem('DUDE_INV_TAX_RATE')) || 0,
+                notes: localStorage.getItem('DUDE_INV_NOTES') || '',
+                numberFormat: localStorage.getItem('DUDE_INV_NUMBER_FORMAT') || 'prefix-date-counter',
+                currencyPosition: localStorage.getItem('DUDE_INV_CURRENCY_POSITION') || 'prefix',
+                colorTheme: localStorage.getItem('DUDE_INV_COLOR_THEME') || 'default',
             };
         }
 
@@ -2860,7 +2964,17 @@
             const m = String(now.getMonth() + 1).padStart(2, '0');
             const d = String(now.getDate()).padStart(2, '0');
             const prefix = localStorage.getItem('DUDE_INV_PREFIX') || 'INV';
-            return `${prefix}-${y}${m}${d}-${String(counter).padStart(4, '0')}`;
+            const format = localStorage.getItem('DUDE_INV_NUMBER_FORMAT') || 'prefix-date-counter';
+            const counterStr = String(counter).padStart(4, '0');
+            const dateStr = `${y}${m}${d}`;
+            switch (format) {
+                case 'prefix-counter':
+                    return `${prefix}-${counterStr}`;
+                case 'date-counter':
+                    return `${dateStr}-${counterStr}`;
+                default:
+                    return `${prefix}-${dateStr}-${counterStr}`;
+            }
         }
 
         function generateInvoiceHTML(x) {
@@ -2873,8 +2987,26 @@
             const phone = localStorage.getItem('DUDE_I_AM_GAMER_PHONE') || '';
             const email = localStorage.getItem('DUDE_I_AM_GAMER_EMAIL') || '';
             const symbol = getCurrencySymbol();
-            const totalDue = (Number(x.due) || 0) + (Number(x.feeDue) || 0);
-            const qrData = `INV: ${invNum} | Client: ${x.name} | Total: ${symbol}${totalDue.toFixed(2)}`;
+            const currencyPos = invSettings.currencyPosition || 'prefix';
+            const taxRate = invSettings.taxRate || 0;
+            const showTax = invSettings.showTax;
+            const taxAmount = (Number(x.finalPrice) || 0) * (taxRate / 100);
+            const totalDue = (Number(x.due) || 0) + (Number(x.feeDue) || 0) + taxAmount;
+
+            const colorTheme = invSettings.colorTheme || 'default';
+            let themeColors = {
+                accent: 'var(--accent)',
+                seal: 'var(--seal-color)'
+            };
+            if (colorTheme === 'blue') themeColors = { accent: '#3498db', seal: '#2980b9' };
+            if (colorTheme === 'gold') themeColors = { accent: '#f1c40f', seal: '#f39c12' };
+            if (colorTheme === 'green') themeColors = { accent: '#2ecc71', seal: '#27ae60' };
+            if (colorTheme === 'red') themeColors = { accent: '#e74c3c', seal: '#c0392b' };
+            if (colorTheme === 'purple') themeColors = { accent: '#9b59b6', seal: '#8e44ad' };
+            if (colorTheme === 'monochrome') themeColors = { accent: '#333', seal: '#555' };
+
+            const qrData =
+                `INV: ${invNum} | Client: ${x.name} | Total: ${symbol}${totalDue.toFixed(2)}`;
             const qrSrc =
                 `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrData)}`;
             let sealText = 'DUE',
@@ -2882,6 +3014,7 @@
             if (totalDue <= 0) { sealText = 'PAID';
                 sealClass = 'paid'; } else if ((Number(x.paid) || 0) > 0 && totalDue > 0) { sealText = 'PARTIAL';
                 sealClass = 'partial'; }
+
             const showQR = invSettings.showQR;
             const showSeal = invSettings.showSeal;
             const showCompany = invSettings.showCompany;
@@ -2889,6 +3022,13 @@
             const invTitle = invSettings.title || 'INVOICE';
             const invHeaderMsg = invSettings.header || '';
             const invFooterMsg = invSettings.footer || '';
+            const invNotes = invSettings.notes || '';
+
+            const fmtMoney = (v) => {
+                const val = Number(v || 0).toFixed(2);
+                return currencyPos === 'prefix' ? symbol + val : val + symbol;
+            };
+
             let companyDetailsHtml = '';
             if (showCompany) {
                 companyDetailsHtml = `
@@ -2906,23 +3046,31 @@
                 <span class="invoice-number">${invNum}</span>
               </div>`;
             }
+
             let paymentRowsHtml = '';
             if (showPayment) {
                 paymentRowsHtml = `
-              <div class="row"><span class="label">Main Price</span><span class="value">${money(x.price)}</span></div>
-              <div class="row"><span class="label">Discount</span><span class="value">${money(x.discount)}</span></div>
-              <div class="row"><span class="label">Final Price</span><span class="value">${money(x.finalPrice)}</span></div>
-              <div class="row"><span class="label">Paid / Advance</span><span class="value">${money(x.paid)}</span></div>
-              <div class="row"><span class="label">Main Due / Loan</span><span class="value">${money(x.due)}</span></div>
-              <div class="row"><span class="label">Separate Fee</span><span class="value">${money(x.monthlyFee||0)}</span></div>
-              <div class="row"><span class="label">Fee Paid</span><span class="value">${money(x.feePaid||0)}</span></div>
-              <div class="row"><span class="label">Fee Due</span><span class="value">${money(x.feeDue||0)}</span></div>
-              <div class="row total-row"><span>TOTAL DUE</span><span>${money(totalDue)}</span></div>`;
+              <div class="row"><span class="label">Main Price</span><span class="value">${fmtMoney(x.price)}</span></div>
+              <div class="row"><span class="label">Discount</span><span class="value">${fmtMoney(x.discount)}</span></div>
+              <div class="row"><span class="label">Final Price</span><span class="value">${fmtMoney(x.finalPrice)}</span></div>
+              <div class="row"><span class="label">Paid / Advance</span><span class="value">${fmtMoney(x.paid)}</span></div>
+              <div class="row"><span class="label">Main Due / Loan</span><span class="value">${fmtMoney(x.due)}</span></div>
+              <div class="row"><span class="label">Separate Fee</span><span class="value">${fmtMoney(x.monthlyFee||0)}</span></div>
+              <div class="row"><span class="label">Fee Paid</span><span class="value">${fmtMoney(x.feePaid||0)}</span></div>
+              <div class="row"><span class="label">Fee Due</span><span class="value">${fmtMoney(x.feeDue||0)}</span></div>`;
+                if (showTax && taxRate > 0) {
+                    paymentRowsHtml +=
+                        `<div class="row"><span class="label">Tax (${taxRate}%)</span><span class="value">${fmtMoney(taxAmount)}</span></div>`;
+                }
+                paymentRowsHtml +=
+                    `<div class="row total-row"><span>TOTAL DUE</span><span>${fmtMoney(totalDue)}</span></div>`;
             } else {
                 paymentRowsHtml = `
-              <div class="row"><span class="label">Total Due</span><span class="value">${money(totalDue)}</span></div>`;
+              <div class="row"><span class="label">Total Due</span><span class="value">${fmtMoney(totalDue)}</span></div>`;
             }
-            const sealHtml = showSeal ? `<div class="seal ${sealClass}">${sealText}</div>` : '';
+
+            const sealHtml = showSeal ? `<div class="seal ${sealClass}" style="border-color:${themeColors.seal};color:${themeColors.seal};text-shadow:0 0 20px ${themeColors.seal};box-shadow:0 0 30px ${themeColors.seal};">${sealText}</div>` :
+                '';
             const qrHtml = showQR ? `<div class="qr-area"><img src="${qrSrc}" alt="QR Code"></div>` : '';
             const headerMsgHtml = invHeaderMsg ?
                 `<div style="text-align:center;font-size:calc(var(--font-size-base)*0.85);color:var(--text-muted);margin-bottom:10px;">${esc(invHeaderMsg)}</div>` :
@@ -2930,13 +3078,17 @@
             const footerMsgHtml = invFooterMsg ?
                 `<div style="margin-top:8px;font-size:calc(var(--font-size-base)*0.78);color:var(--text-muted);text-align:center;">${esc(invFooterMsg)}</div>` :
                 '';
-            return `<div class="invoice-box">
+            const notesHtml = invNotes ?
+                `<div style="margin-top:8px;font-size:calc(var(--font-size-base)*0.78);color:var(--text-muted);border-top:1px solid var(--border-color);padding-top:8px;">${esc(invNotes)}</div>` :
+                '';
+
+            return `<div class="invoice-box" style="border-color:${themeColors.accent};">
             ${sealHtml}
-            <div class="invoice-header">
+            <div class="invoice-header" style="border-bottom-color:${themeColors.accent};">
               <div class="logo-area">
                 ${logo ? `<img src="${logo}" alt="Logo">` : ''}
                 <div>
-                  <strong style="font-size:calc(var(--font-size-base)*1.3);color:var(--accent);">${esc(company)}</strong>
+                  <strong style="font-size:calc(var(--font-size-base)*1.3);color:${themeColors.accent};">${esc(company)}</strong>
                   <div style="font-size:calc(var(--font-size-base)*0.7);color:var(--text-muted);">${esc(localStorage.getItem('DUDE_I_AM_GAMER_SITE_SUBTITLE')||'')}</div>
                 </div>
               </div>
@@ -2955,6 +3107,7 @@
             </div>
             ${paymentRowsHtml}
             ${x.note ? `<div style="margin-top:8px;font-size:calc(var(--font-size-base)*0.78);color:var(--text-muted);">Note: ${esc(x.note)}</div>` : ''}
+            ${notesHtml}
             ${qrHtml}
             ${footerMsgHtml}
             <div class="invoice-footer">
@@ -2999,6 +3152,60 @@
             </head><body>${html}</body></html>`);
             win.document.close();
             setTimeout(() => { win.print(); }, 800);
+        }
+
+        // ============================================================
+        // INVOICE PDF DOWNLOAD (using html2pdf)
+        // ============================================================
+        function downloadInvoice(id) {
+            let x = clients.find(a => a.id === id);
+            if (!x) { showToast('Client not found', 'error', 'Error'); return; }
+            const html = generateInvoiceHTML(x);
+            const container = document.createElement('div');
+            container.innerHTML = html;
+            container.style.padding = '20px';
+            container.style.background = 'var(--bg-primary)';
+            document.body.appendChild(container);
+
+            const invoiceEl = container.querySelector('.invoice-box');
+            if (!invoiceEl) {
+                showToast('Invoice element not found.', 'error', 'Error');
+                document.body.removeChild(container);
+                return;
+            }
+
+            // Temporarily override background for PDF generation
+            const originalBg = invoiceEl.style.background;
+            invoiceEl.style.background = '#ffffff';
+            invoiceEl.style.color = '#000000';
+            invoiceEl.querySelectorAll('.label').forEach(el => el.style.color = '#555555');
+            invoiceEl.querySelectorAll('.value').forEach(el => el.style.color = '#000000');
+            invoiceEl.querySelectorAll('.company-details strong').forEach(el => el.style.color = '#000000');
+            invoiceEl.querySelectorAll('.invoice-number').forEach(el => el.style.color = '#000000');
+            invoiceEl.querySelectorAll('.tag').forEach(el => { el.style.color = '#333';
+                el.style.borderColor = '#999'; });
+            invoiceEl.querySelectorAll('.seal').forEach(el => { el.style.opacity = '0.4';
+                el.style.borderColor = '#666';
+                el.style.color = '#666';
+                el.style.textShadow = 'none';
+                el.style.boxShadow = 'none'; });
+
+            const opt = {
+                margin: 0.5,
+                filename: `Invoice-${x.name}-${today()}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+            };
+
+            html2pdf().from(invoiceEl).set(opt).save().then(() => {
+                document.body.removeChild(container);
+                showToast('Invoice PDF downloaded successfully!', 'success', 'Download');
+            }).catch((err) => {
+                console.error('PDF generation error:', err);
+                document.body.removeChild(container);
+                showToast('Failed to generate PDF: ' + err.message, 'error', 'Error');
+            });
         }
 
         // ============================================================
@@ -3352,7 +3559,10 @@
             <div class="section">Loan / Kisti Schedule</div><div class="notice">${(x.kistis||[]).length?x.kistis.map((k,i)=>`<div style="padding:6px 0;border-bottom:1px solid var(--border-color);">Kisti ${i+1}: <b>${money(k.amount)}</b> • ${esc(k.date||'—')} • ${k.paid?'<span class="kisti-paid">PAID</span>':'<span class="kisti-due">DUE</span>'}${k.note?' • '+esc(k.note):''}</div>`).join(''):'No kisti schedule added.'}</div>
             <div class="section">Payment Breakdown</div><div class="notice">Main: ${money(x.finalPrice)} • Main Paid: ${money(x.paid)} • Main Due/Loan: ${money(x.due)}<br>Separate Fee: ${money(x.monthlyFee||0)} • Fee Paid: ${money(x.feePaid||0)} • Fee Due: ${money(x.feeDue||0)}</div>
             <div class="section">Note</div><div class="notice">${esc(x.note||'—')}</div>
-            <div style="margin-top:14px;"><button class="btn primary" onclick="printInvoice('${x.id}')">🖨 Print Invoice</button></div>`;
+            <div style="margin-top:14px; display:flex; gap:8px; flex-wrap:wrap;">
+              <button class="btn primary" onclick="printInvoice('${x.id}')">🖨 Print Invoice</button>
+              <button class="btn primary" onclick="downloadInvoice('${x.id}')">⬇ Download PDF</button>
+            </div>`;
             $('detailModal').classList.add('show')
         }
 
@@ -3693,30 +3903,58 @@
         }
 
         // ============================================================
-        // INVOICE SETTINGS
+        // INVOICE SETTINGS LOAD/SAVE
         // ============================================================
         function loadInvoiceSettings() {
-            const fields = { invTitle: 'DUDE_INV_TITLE', invPrefix: 'DUDE_INV_PREFIX', invHeader: 'DUDE_INV_HEADER',
-                invFooter: 'DUDE_INV_FOOTER', invShowQR: 'DUDE_INV_SHOW_QR', invShowSeal: 'DUDE_INV_SHOW_SEAL',
-                invShowCompany: 'DUDE_INV_SHOW_COMPANY', invShowPayment: 'DUDE_INV_SHOW_PAYMENT' };
+            const fields = {
+                invTitle: 'DUDE_INV_TITLE',
+                invPrefix: 'DUDE_INV_PREFIX',
+                invHeader: 'DUDE_INV_HEADER',
+                invFooter: 'DUDE_INV_FOOTER',
+                invShowQR: 'DUDE_INV_SHOW_QR',
+                invShowSeal: 'DUDE_INV_SHOW_SEAL',
+                invShowCompany: 'DUDE_INV_SHOW_COMPANY',
+                invShowPayment: 'DUDE_INV_SHOW_PAYMENT',
+                invShowTax: 'DUDE_INV_SHOW_TAX',
+                invTaxRate: 'DUDE_INV_TAX_RATE',
+                invNotes: 'DUDE_INV_NOTES',
+                invNumberFormat: 'DUDE_INV_NUMBER_FORMAT',
+                invCurrencyPosition: 'DUDE_INV_CURRENCY_POSITION',
+                invColorTheme: 'DUDE_INV_COLOR_THEME',
+            };
             for (const [el, key] of Object.entries(fields)) {
                 const val = localStorage.getItem(key);
                 const input = document.getElementById(el);
                 if (input) {
                     if (input.type === 'select-one' || input.tagName === 'SELECT') {
                         if (val !== null) input.value = val;
-                        else if (el === 'invShowQR' || el === 'invShowSeal' || el === 'invShowCompany' || el ===
-                            'invShowPayment') input.value = '1';
-                    } else { if (val !== null) input.value = val; }
+                        else if (['invShowQR', 'invShowSeal', 'invShowCompany', 'invShowPayment', 'invShowTax'].includes(
+                                el)) input.value = '1';
+                    } else {
+                        if (val !== null) input.value = val;
+                    }
                 }
             }
             updateInvoicePreview();
         }
 
         function saveInvoiceSettings() {
-            const fields = { invTitle: 'DUDE_INV_TITLE', invPrefix: 'DUDE_INV_PREFIX', invHeader: 'DUDE_INV_HEADER',
-                invFooter: 'DUDE_INV_FOOTER', invShowQR: 'DUDE_INV_SHOW_QR', invShowSeal: 'DUDE_INV_SHOW_SEAL',
-                invShowCompany: 'DUDE_INV_SHOW_COMPANY', invShowPayment: 'DUDE_INV_SHOW_PAYMENT' };
+            const fields = {
+                invTitle: 'DUDE_INV_TITLE',
+                invPrefix: 'DUDE_INV_PREFIX',
+                invHeader: 'DUDE_INV_HEADER',
+                invFooter: 'DUDE_INV_FOOTER',
+                invShowQR: 'DUDE_INV_SHOW_QR',
+                invShowSeal: 'DUDE_INV_SHOW_SEAL',
+                invShowCompany: 'DUDE_INV_SHOW_COMPANY',
+                invShowPayment: 'DUDE_INV_SHOW_PAYMENT',
+                invShowTax: 'DUDE_INV_SHOW_TAX',
+                invTaxRate: 'DUDE_INV_TAX_RATE',
+                invNotes: 'DUDE_INV_NOTES',
+                invNumberFormat: 'DUDE_INV_NUMBER_FORMAT',
+                invCurrencyPosition: 'DUDE_INV_CURRENCY_POSITION',
+                invColorTheme: 'DUDE_INV_COLOR_THEME',
+            };
             for (const [el, key] of Object.entries(fields)) {
                 const input = document.getElementById(el);
                 if (input) { localStorage.setItem(key, input.value); }
@@ -3731,6 +3969,9 @@
             const footer = document.getElementById('invFooter')?.value || '';
             const showQR = document.getElementById('invShowQR')?.value === '1';
             const showSeal = document.getElementById('invShowSeal')?.value === '1';
+            const showTax = document.getElementById('invShowTax')?.value === '1';
+            const taxRate = parseFloat(document.getElementById('invTaxRate')?.value) || 0;
+
             document.getElementById('invPreviewTitle').textContent = title || 'INVOICE';
             const now = new Date();
             const y = now.getFullYear(),
@@ -3739,6 +3980,7 @@
             document.getElementById('invPreviewPrefix').textContent = `${prefix}-${y}${m}${d}-0001`;
             document.getElementById('invPreviewHeader').textContent = header || '(empty)';
             document.getElementById('invPreviewFooter').textContent = footer || '(empty)';
+            document.getElementById('invPreviewTax').textContent = (showTax && taxRate > 0) ? taxRate + '%' : 'Not shown';
             document.getElementById('invPreviewQR').textContent = showQR ? '✅ Yes' : '❌ No';
             document.getElementById('invPreviewSeal').textContent = showSeal ? '✅ Yes' : '❌ No';
         }
@@ -3991,8 +4233,6 @@
                         for (const [key, value] of Object.entries(c)) {
                             if (value === undefined || value === null || value === '') continue;
                             const mapped = mapField(key);
-                            // --- FIX: Remove restrictive conditions that skipped setting id/sid ---
-                            // Now we set both independently
                             if (['price', 'discount', 'paid', 'due', 'finalPrice', 'monthlyFee',
                                     'feePaid', 'feeDue'
                                 ].includes(mapped)) {
@@ -4531,7 +4771,6 @@
                     for (const [key, value] of Object.entries(c)) {
                         if (value === undefined || value === null || value === '') continue;
                         const mapped = mapField(key);
-                        // --- FIX: removed the restrictive conditions ---
                         if (['price', 'discount', 'paid', 'due', 'finalPrice', 'monthlyFee',
                                 'feePaid', 'feeDue'
                             ].includes(mapped)) {
@@ -4613,9 +4852,179 @@
             if (target) target.classList.remove('hidden');
             document.querySelectorAll('.nav button[data-page]').forEach(b => b.classList.remove('active'));
             if (btn) btn.classList.add('active');
-            const titles = { dashboard: 'Dashboard', panels: 'Panel List', finance: 'Finance', trash: 'Trash' };
+            const titles = { dashboard: 'Dashboard', panels: 'Panel List', finance: 'Finance', trash: 'Trash',
+                report: 'Report' };
             document.getElementById('pageTitle').textContent = titles[page] || 'Dashboard';
             render();
+            // If report page, auto-generate report
+            if (page === 'report') {
+                setTimeout(() => generateReport(), 200);
+            }
+        }
+
+        // ============================================================
+        // REPORT SYSTEM
+        // ============================================================
+        function generateReport() {
+            const period = document.getElementById('reportPeriod').value;
+            const startInput = document.getElementById('reportStartDate');
+            const endInput = document.getElementById('reportEndDate');
+            let startDate, endDate;
+
+            const now = new Date();
+            const todayStr = today();
+
+            if (period === 'monthly') {
+                const y = now.getFullYear();
+                const m = String(now.getMonth() + 1).padStart(2, '0');
+                startDate = `${y}-${m}-01`;
+                endDate = todayStr;
+            } else if (period === 'yearly') {
+                const y = now.getFullYear();
+                startDate = `${y}-01-01`;
+                endDate = todayStr;
+            } else if (period === 'custom') {
+                if (!startInput.value || !endInput.value) {
+                    showToast('Please select both start and end dates for custom range.', 'warning', 'Invalid Range');
+                    return;
+                }
+                startDate = startInput.value;
+                endDate = endInput.value;
+            } else { // lifetime
+                startDate = '2000-01-01';
+                endDate = todayStr;
+            }
+
+            // Filter clients
+            const filtered = clients.filter(c => c.date >= startDate && c.date <= endDate);
+            if (filtered.length === 0) {
+                document.getElementById('reportContent').innerHTML =
+                    `<div class="empty">No clients found for the selected period (${startDate} to ${endDate}).</div>`;
+                document.getElementById('downloadReportBtn').style.display = 'none';
+                return;
+            }
+
+            // Calculate summary
+            const total = filtered.length;
+            const active = filtered.filter(x => !countdown(x.expiry)[1]).length;
+            const totalPaid = filtered.reduce((s, x) => s + (Number(x.paid) || 0), 0);
+            const totalDue = filtered.reduce((s, x) => s + (Number(x.due) || 0) + (Number(x.feeDue) || 0), 0);
+            const totalFinalPrice = filtered.reduce((s, x) => s + (Number(x.finalPrice) || 0), 0);
+            const totalDiscount = filtered.reduce((s, x) => s + (Number(x.discount) || 0), 0);
+            const totalFee = filtered.reduce((s, x) => s + (Number(x.monthlyFee) || 0), 0);
+
+            const symbol = getCurrencySymbol();
+
+            // Build table rows
+            let tableRows = filtered.map(x => {
+                const c = countdown(x.expiry);
+                return `<tr>
+              <td>${esc(x.date)}</td>
+              <td>${esc(x.name)}</td>
+              <td>${esc(x.sid||'—')}</td>
+              <td>${panelList(x).map(tag).join('')}</td>
+              <td>${esc(x.key)}</td>
+              <td>${esc(x.limit)}</td>
+              <td>${c[0]}</td>
+              <td>${money(x.paid)}</td>
+              <td>${money(x.due)}</td>
+              <td>${money(x.finalPrice)}</td>
+            </tr>`;
+            }).join('');
+
+            const reportHTML = `
+            <div style="margin-bottom:12px;">
+              <h2 style="color:var(--text-primary);">📊 Business Report</h2>
+              <p style="color:var(--text-muted);">Period: ${startDate} to ${endDate} | Total Clients: ${total}</p>
+            </div>
+            <div class="report-summary">
+              <div class="stat-item"><span>Total Clients</span><strong>${total}</strong></div>
+              <div class="stat-item"><span>Active</span><strong>${active}</strong></div>
+              <div class="stat-item"><span>Expired</span><strong>${total - active}</strong></div>
+              <div class="stat-item"><span>Total Paid</span><strong>${money(totalPaid)}</strong></div>
+              <div class="stat-item"><span>Total Due</span><strong>${money(totalDue)}</strong></div>
+              <div class="stat-item"><span>Final Price Sum</span><strong>${money(totalFinalPrice)}</strong></div>
+              <div class="stat-item"><span>Total Discount</span><strong>${money(totalDiscount)}</strong></div>
+              <div class="stat-item"><span>Total Fee</span><strong>${money(totalFee)}</strong></div>
+            </div>
+            <div class="report-table-wrap">
+              <table class="report-table">
+                <thead>
+                  <tr>
+                    <th>Date</th><th>Name</th><th>SID</th><th>Panel</th><th>Key</th><th>Limit</th><th>Expiry</th><th>Paid</th><th>Due</th><th>Final</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${tableRows}
+                </tbody>
+              </table>
+            </div>
+            <div style="margin-top:16px; font-size:calc(var(--font-size-base)*0.7); color:var(--text-muted); text-align:center;">
+              Generated on ${new Date().toLocaleString()} • ${esc(localStorage.getItem('DUDE_I_AM_GAMER_SITE_NAME')||'DUDE I AM GAMER')}
+            </div>
+          `;
+
+            document.getElementById('reportContent').innerHTML = reportHTML;
+            document.getElementById('downloadReportBtn').style.display = 'inline-flex';
+            showToast(`Report generated: ${total} clients found.`, 'success', 'Report Ready');
+        }
+
+        function downloadReportPDF() {
+            const reportContent = document.getElementById('reportContent');
+            if (!reportContent || reportContent.querySelector('.empty')) {
+                showToast('Please generate a report first.', 'warning', 'No Report');
+                return;
+            }
+
+            const originalBg = reportContent.style.background;
+            reportContent.style.background = '#ffffff';
+            reportContent.style.color = '#000000';
+            reportContent.style.border = 'none';
+            reportContent.querySelectorAll('.stat-item').forEach(el => {
+                el.style.background = '#f5f5f5';
+                el.style.borderColor = '#ccc';
+                el.style.color = '#000';
+            });
+            reportContent.querySelectorAll('.stat-item strong').forEach(el => el.style.color = '#000');
+            reportContent.querySelectorAll('.report-table th').forEach(el => {
+                el.style.background = '#eee';
+                el.style.color = '#000';
+            });
+            reportContent.querySelectorAll('.report-table td').forEach(el => el.style.color = '#000');
+            reportContent.querySelectorAll('.tag').forEach(el => {
+                el.style.color = '#333';
+                el.style.borderColor = '#999';
+                el.style.background = '#eee';
+            });
+
+            const opt = {
+                margin: 0.5,
+                filename: `Business-Report-${today()}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
+            };
+
+            const btn = document.getElementById('downloadReportBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Generating...';
+
+            html2pdf().from(reportContent).set(opt).save().then(() => {
+                reportContent.style.background = originalBg || '';
+                reportContent.style.color = '';
+                reportContent.style.border = '';
+                btn.disabled = false;
+                btn.textContent = '⬇ Download PDF';
+                showToast('Report PDF downloaded successfully!', 'success', 'Download');
+            }).catch((err) => {
+                console.error('PDF generation error:', err);
+                reportContent.style.background = originalBg || '';
+                reportContent.style.color = '';
+                reportContent.style.border = '';
+                btn.disabled = false;
+                btn.textContent = '⬇ Download PDF';
+                showToast('Failed to generate PDF: ' + err.message, 'error', 'Error');
+            });
         }
 
         // ============================================================
@@ -4640,6 +5049,7 @@
                 <button class="btn small" onclick="editClient('${x.id}')">Edit</button>
                 <button class="btn danger small" onclick="deleteClient('${x.id}')">Delete</button>
                 <button class="btn primary small" onclick="printInvoice('${x.id}')">🖨</button>
+                <button class="btn primary small" onclick="downloadInvoice('${x.id}')">⬇</button>
               </div></td>`;
             }
             const dateDisplay = isTrash ? (x.deletedAt ? new Date(x.deletedAt).toLocaleString() : '—') : esc(x.date);
@@ -4710,7 +5120,7 @@
             $('stPaid').textContent = money(paid);
             $('stDue').textContent = money(due);
             $('financeRows').innerHTML = financeData.map(x =>
-                `<tr><td><b>${esc(x.name)}</b></td><td>${panelList(x).map(tag).join('')}</td><td>${money(x.finalPrice)}</td><td>${money(x.discount)}</td><td class="ok">${money(x.paid)}</td><td class="bad">${money(x.due)}</td><td>${x.billingCycle==='quarterly'?'3 Months / OBB':x.billingCycle==='monthly'?'Monthly':'Off'}</td><td>${money(x.monthlyFee||0)}</td><td class="ok">${money(x.feePaid||0)}</td><td class="bad">${money(x.feeDue||0)}</td><td class="no-print"><button class="btn primary small" onclick="printInvoice('${x.id}')">🖨</button></td></tr>`
+                `<tr><td><b>${esc(x.name)}</b></td><td>${panelList(x).map(tag).join('')}</td><td>${money(x.finalPrice)}</td><td>${money(x.discount)}</td><td class="ok">${money(x.paid)}</td><td class="bad">${money(x.due)}</td><td>${x.billingCycle==='quarterly'?'3 Months / OBB':x.billingCycle==='monthly'?'Monthly':'Off'}</td><td>${money(x.monthlyFee||0)}</td><td class="ok">${money(x.feePaid||0)}</td><td class="bad">${money(x.feeDue||0)}</td><td class="no-print"><button class="btn primary small" onclick="printInvoice('${x.id}')">🖨</button><button class="btn primary small" onclick="downloadInvoice('${x.id}')">⬇</button></td></tr>`
                 ).join('') || '<tr><td colspan="11"><div class="empty">No payment records found.</div></td></tr>';
             $('fTotal').textContent = money(total);
             $('fDiscount').textContent = money(disc);
@@ -4789,6 +5199,15 @@
         document.getElementById('userSelect').addEventListener('change', function() { switchUser(this.value); });
         document.getElementById('addUserBtn').addEventListener('click', addUser);
         document.getElementById('deleteUserBtn').addEventListener('click', deleteUser);
+
+        // Report event listeners
+        document.getElementById('reportPeriod').addEventListener('change', function() {
+            const customRange = document.getElementById('customDateRange');
+            if (this.value === 'custom') { customRange.style.display = 'flex'; } else { customRange.style.display =
+                    'none'; }
+        });
+        document.getElementById('generateReportBtn').addEventListener('click', generateReport);
+        document.getElementById('downloadReportBtn').addEventListener('click', downloadReportPDF);
 
         document.querySelectorAll('.theme-selector button').forEach(btn => {
             btn.addEventListener('click', function() {
@@ -4913,7 +5332,8 @@
         });
 
         ['invTitle', 'invPrefix', 'invHeader', 'invFooter', 'invShowQR', 'invShowSeal', 'invShowCompany',
-            'invShowPayment'
+            'invShowPayment', 'invShowTax', 'invTaxRate', 'invNotes', 'invNumberFormat', 'invCurrencyPosition',
+            'invColorTheme'
         ].forEach(id => {
             const el = document.getElementById(id);
             if (el) {
@@ -4959,6 +5379,7 @@
         document.getElementById('panels').classList.add('hidden');
         document.getElementById('finance').classList.add('hidden');
         document.getElementById('trash').classList.add('hidden');
+        document.getElementById('report').classList.add('hidden');
         document.getElementById('pageTitle').textContent = 'Dashboard';
         render();
 
