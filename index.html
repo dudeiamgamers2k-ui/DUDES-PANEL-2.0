@@ -3094,7 +3094,6 @@
         // TRASH SYSTEM
         // ============================================================
         function moveToTrash(client) {
-            // Preserve the original sid and all fields
             const trashed = { ...client, deletedAt: new Date().toISOString() };
             trashItems.push(trashed);
             persist();
@@ -3105,7 +3104,6 @@
             const idx = trashItems.findIndex(t => t.id === id);
             if (idx === -1) { showToast('Item not found in trash.', 'error', 'Error'); return; }
             const item = trashItems[idx];
-            // Remove deletedAt, preserve sid and all other fields
             const { deletedAt, ...client } = item;
             clients.push(client);
             trashItems.splice(idx, 1);
@@ -3993,9 +3991,8 @@
                         for (const [key, value] of Object.entries(c)) {
                             if (value === undefined || value === null || value === '') continue;
                             const mapped = mapField(key);
-                            // Ensure we don't overwrite sid with id or vice versa
-                            if (mapped === 'id' && obj.sid) continue; // keep existing sid if set
-                            if (mapped === 'sid' && obj.id) continue; // keep existing id if set
+                            // --- FIX: Remove restrictive conditions that skipped setting id/sid ---
+                            // Now we set both independently
                             if (['price', 'discount', 'paid', 'due', 'finalPrice', 'monthlyFee',
                                     'feePaid', 'feeDue'
                                 ].includes(mapped)) {
@@ -4342,7 +4339,6 @@
             if (els.text) els.text.textContent = '⏳ Connecting...';
             if (els.text2) els.text2.textContent = '⏳ Connecting...';
             try {
-                // Use 'consent' to force showing the account picker and avoid silent failures
                 tokenClient.requestAccessToken({ prompt: 'consent' });
             } catch (e) { console.error('Token request error:', e);
                 setDriveError('Failed to open authentication popup. Please allow popups.');
@@ -4485,7 +4481,7 @@
                         }
                     }
                 }
-                // Normalize imported data (same as importData)
+                // Normalize imported data (same as importData) — with the fix
                 const normalized = data.map(c => {
                     const mapField = (key) => {
                         const aliasMap = {
@@ -4535,8 +4531,7 @@
                     for (const [key, value] of Object.entries(c)) {
                         if (value === undefined || value === null || value === '') continue;
                         const mapped = mapField(key);
-                        if (mapped === 'id' && obj.sid) continue;
-                        if (mapped === 'sid' && obj.id) continue;
+                        // --- FIX: removed the restrictive conditions ---
                         if (['price', 'discount', 'paid', 'due', 'finalPrice', 'monthlyFee',
                                 'feePaid', 'feeDue'
                             ].includes(mapped)) {
@@ -4578,7 +4573,6 @@
                     return;
                 }
                 clients = valid;
-                // Trash items are not restored, keep current trash
                 persist();
                 render();
                 if (!silent) {
